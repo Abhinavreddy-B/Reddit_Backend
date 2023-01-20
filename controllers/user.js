@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt')
 const config = require('../utils/config')
 const User = require('../models/user')
 const jwt = require('jsonwebtoken')
+const middleware = require('../utils/middleware')
 
 const UserRouter = express.Router()
 
@@ -19,10 +20,10 @@ UserRouter.post('/signup', async (req, res, next) => {
         return res.status(400).json({ error: 'username and password required' })
     }
 
-    const existingUser = await User.findOne({userName})
+    const existingUser = await User.findOne({ userName })
 
-    if(existingUser && existingUser !== null){
-        return res.status(400).json({error: 'Username Already Exists'})
+    if (existingUser && existingUser !== null) {
+        return res.status(400).json({ error: 'Username Already Exists' })
     }
 
     const saltRounds = 10
@@ -38,9 +39,13 @@ UserRouter.post('/signup', async (req, res, next) => {
         passwordHash: pwHashed
     })
 
-    const savedUser = await newUser.save()
+    try {
+        const savedUser = await newUser.save()
+        res.status(201).json(savedUser)
+    } catch (e) {
+        next(e)
+    }
 
-    res.status(201).json(savedUser)
 })
 
 UserRouter.post('/login', async (req, res, next) => {
@@ -67,11 +72,50 @@ UserRouter.post('/login', async (req, res, next) => {
         id: user._id,
     }
 
-    const token = jwt.sign(toSend,config.Secret)
+    const token = jwt.sign(toSend, config.Secret)
 
     res
-    .status(200)
-    .json({...toSend,token})
+        .status(200)
+        .json({ ...toSend, token })
+})
+
+UserRouter.get('/', middleware.tokenExtractor, middleware.userExtractor, async (req, res, next) => {
+    return res.status(200).json(req.user)
+})
+
+UserRouter.put('/', middleware.tokenExtractor, middleware.userExtractor, async (req, res, next) => {
+    const { firstName,
+        lastName,
+        Email,
+        Age,
+        ContactNumber,
+        password } = req.body
+
+    const user = req.user
+    const oldpwHash = user.passwordHash
+
+    const newuser = {
+        firstName: firstName || user.firstName,
+        lastName: lastName || user.lastName,
+        Email: Email || user.Email,
+        Age: Age || user.Age,
+        ContactNumber: ContactNumber || user.ContactNumber,
+    }
+
+    try {
+        if (password) {
+            const SaltRounds = 10
+            const newpwHash = await bcrypt.hash(password, SaltRounds)
+            newuser.passwordHash = newpwHash
+        } else {
+            newuser.passwordHash = oldpwHash
+        }
+        await User.findOneAndUpdate(user,newuser)
+        return res.status(200).json(await User.findById(user._id))
+    } catch(e){
+        console.log(e)
+        return res.status(400).json({error: 'internal error, Unable to Update'})
+    }
 })
 
 module.exports = UserRouter
