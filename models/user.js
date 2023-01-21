@@ -4,7 +4,10 @@ const UserSchema = new mongoose.Schema({
     firstName: String,
     lastName: String,
     userName: String,
-    Email: String,
+    Email: {
+        type: String,
+        unique: true,
+    },
     Age: Number,
     ContactNumber: Number,
     passwordHash: String,
@@ -17,6 +20,10 @@ const UserSchema = new mongoose.Schema({
     Following: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
+    }],
+    SubGreddits: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'SubGreddit'
     }]
 })
 
