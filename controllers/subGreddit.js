@@ -9,7 +9,7 @@ SubGredditRouter.get('/all',async (req,res,next) => {
 
 SubGredditRouter.get('/',async (req,res,next) => {
     const user = req.user
-    return res.status(200).json(await User.find({Owner: user._id}))
+    return res.status(200).json(await SubGreddits.find({Owner: user._id}))
 })
 
 SubGredditRouter.post('/',async (req,res,next) => {
