@@ -36,7 +36,11 @@ UserRouter.post('/signup', async (req, res, next) => {
         Email,
         Age,
         ContactNumber,
-        passwordHash: pwHashed
+        passwordHash: pwHashed,
+        FollowerCount: 0,
+        Followers: [],
+        FollowingCount: 0,
+        Following: []
     })
 
     try {
@@ -80,7 +84,8 @@ UserRouter.post('/login', async (req, res, next) => {
 })
 
 UserRouter.get('/', middleware.tokenExtractor, middleware.userExtractor, async (req, res, next) => {
-    return res.status(200).json(req.user)
+    const { firstName, lastName, userName, Email, Age, ContactNumber, FollowerCount, FollowingCount } = req.user
+    return res.status(200).json({ firstName, lastName, userName, Email, Age, ContactNumber, FollowerCount, FollowingCount })
 })
 
 UserRouter.put('/', middleware.tokenExtractor, middleware.userExtractor, async (req, res, next) => {
@@ -110,12 +115,80 @@ UserRouter.put('/', middleware.tokenExtractor, middleware.userExtractor, async (
         } else {
             newuser.passwordHash = oldpwHash
         }
-        await User.findOneAndUpdate(user,newuser)
+        await User.findOneAndUpdate(user, newuser)
         return res.status(200).json(await User.findById(user._id))
-    } catch(e){
+    } catch (e) {
         console.log(e)
-        return res.status(400).json({error: 'internal error, Unable to Update'})
+        return res.status(400).json({ error: 'internal error, Unable to Update' })
     }
 })
+
+UserRouter.get('/followers', middleware.tokenExtractor, middleware.userExtractor, async (req, res, next) => {
+    const followers = await User.findById(req.user._id, { Followers: true }).populate('Followers', { firstName: true, lastName: true, _id: true })
+    // console.log(followers.Followers)
+    res.status(200).json(followers.Followers)
+})
+
+UserRouter.get('/following', middleware.tokenExtractor, middleware.userExtractor, async (req, res, next) => {
+    const followers = await User.findById(req.user._id, { Following: true }).populate('Following', { firstName: true, lastName: true, _id: true })
+    // console.log(followers.Following)
+    res.status(200).json(followers.Following)
+})
+
+UserRouter.post('/followers/remove', middleware.tokenExtractor, middleware.userExtractor, async (req, res, next) => {
+    let user = req.user
+    const { FollowerId } = req.body
+
+    try {
+
+        let Follower = await User.findById(FollowerId)
+
+        if (user.Followers.find(f => f.toString() === FollowerId) && Follower.Following.find(f => f.toString() === user._id.toString())) {
+            user.Followers = user.Followers.filter(f => f._id.toString() !== FollowerId)
+            user.FollowerCount -= 1
+            await user.save()
+
+            Follower.Following = Follower.Following.filter(f => f._id.toString() !== user._id.toString())
+            Follower.FollowingCount -= 1
+            await Follower.save()
+
+            res.status(204).end()
+        } else {
+            res.status(400).json({ error: `Couldnt remove ${Follower.firstName+' '+Follower.lastName}` })
+        }
+    } catch (e) {
+        console.log(e)
+        res.status(400).json({ error: 'Some Internal Error' })
+    }
+})
+
+UserRouter.post('/following/remove', middleware.tokenExtractor, middleware.userExtractor, async (req, res, next) => {
+    let user = req.user
+    const { FollowingId } = req.body
+
+    try {
+
+        let Following = await User.findById(FollowingId)
+
+        console.log(user.Following.find(f => f.toString() === FollowingId))
+        if (user.Following.find(f => f.toString() === FollowingId) && Following.Followers.find(f => f.toString() === user._id.toString())) {
+            user.Following = user.Following.filter(f => f._id.toString() !== FollowingId)
+            user.FollowingCount -= 1
+            await user.save()
+
+            Following.Followers = Following.Followers.filter(f => f._id.toString() !== user._id.toString())
+            Following.FollowerCount -= 1
+            await Following.save()
+
+            res.status(204).end()
+        } else {
+            res.status(400).json({ error: `Couldnt unfollow ${Following.firstName+' '+Following.lastName}` })
+        }
+    } catch (e) {
+        console.log(e)
+        res.status(400).json({ error: 'Some Internal Error' })
+    }
+})
+
 
 module.exports = UserRouter

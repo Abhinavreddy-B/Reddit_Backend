@@ -7,12 +7,22 @@ const UserSchema = new mongoose.Schema({
     Email: String,
     Age: Number,
     ContactNumber: Number,
-    passwordHash: String
+    passwordHash: String,
+    FollowerCount: Number,
+    FollowingCount: Number,
+    Followers: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    Following: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }]
 })
 
 UserSchema.set('toJSON', {
     transform: (document,returnedObject) => {
-        returnedObject._id = returnedObject.id
+        returnedObject.id = returnedObject._id
         delete returnedObject._id
         delete returnedObject.__v
         delete returnedObject.passwordHash
