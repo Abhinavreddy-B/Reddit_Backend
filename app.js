@@ -24,6 +24,9 @@ app.use('/api/users',UserRouter)
 const SubGredditRouter = require('./controllers/subGreddit')
 app.use('/api/subgreddit',middleware.tokenExtractor,middleware.userExtractor,SubGredditRouter)
 
+const PostsRouter = require('./controllers/Posts')
+app.use('/api/post',middleware.tokenExtractor,middleware.userExtractor,PostsRouter)
+
 app.use(middleware.errorHandler)
 
 module.exports = app

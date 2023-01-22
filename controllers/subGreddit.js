@@ -1,4 +1,5 @@
-const express = require('express')
+const express = require('express');
+const Post = require('../models/Posts');
 const SubGreddit = require('../models/SubGreddit')
 const User = require('../models/user');
 const SubGredditRouter = express.Router()
@@ -31,7 +32,7 @@ SubGredditRouter.post('/', async (req, res, next) => {
 
         const response = await newSubGreddit.save()
 
-        user.SubGreddits.push(response._id)
+        user.SubGreddits.push({id: response._id,role: 'mod'})
 
         await user.save()
 
@@ -55,13 +56,13 @@ SubGredditRouter.delete('/:id', async (req, res, next) => {
         }
         
         console.log("old",user.SubGreddits)
-        user.SubGreddits = user.SubGreddits.filter(f => f.toString() !== id)
+        user.SubGreddits = user.SubGreddits.filter(f => f.id.toString() !== id)
         
         console.log("new",user.SubGreddits)
         console.log("deleting",await SubGreddit.findById(id))
 
         await user.save()
-        await SubGreddit.findByIdAndDelete(found)
+        await SubGreddit.findByIdAndDelete(id)
 
         res.status(204).end()
 
@@ -70,4 +71,35 @@ SubGredditRouter.delete('/:id', async (req, res, next) => {
         return res.status(400).json({ error: 'Malformed Id' })
     }
 })
+
+SubGredditRouter.delete('/leave/:id', async (req,res,next) => {
+    const user = req.user
+    const id =  req.params.id
+    
+    if(!user.SubGreddits.find(f => f.id.toString() === id)){
+        return res.status(400).json({error: 'You are not In the SubGreddit'})
+    }else if(user.SubGreddits.find(f => f.id.toString() === id).role === 'mod'){
+        return res.status(400).json({erro: 'You Are a Moderator. You cant leave'})
+    }
+    user.SubGreddits = user.SubGreddits.map(f => f.id.toString() !== id ? f : {...f,role: 'left'})
+    await user.save()
+    return res.status(200).end()
+})
+
+SubGredditRouter.get('/:id',async (req,res,next) => {
+    const user = req.user
+    const id = req.params.id
+
+    // If user is not a participant
+    if(!user.SubGreddits.find(f => f.id.toString() === id && f.role !== 'left')){
+        return res.status(401).json({error: 'You cant access this'})
+    }
+    
+    const found = await SubGreddit.findById(id).populate({
+        path: 'Posts',
+        model: Post,
+    })
+    res.status(200).json(found)
+})
+
 module.exports = SubGredditRouter

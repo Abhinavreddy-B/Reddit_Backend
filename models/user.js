@@ -22,13 +22,16 @@ const UserSchema = new mongoose.Schema({
         ref: 'User'
     }],
     SubGreddits: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'SubGreddit'
+        id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'SubGreddit'
+        },
+        role: String
     }]
 })
 
 UserSchema.set('toJSON', {
-    transform: (document,returnedObject) => {
+    transform: (document, returnedObject) => {
         returnedObject.id = returnedObject._id
         delete returnedObject._id
         delete returnedObject.__v
@@ -36,6 +39,6 @@ UserSchema.set('toJSON', {
     }
 })
 
-const User = mongoose.model('User',UserSchema)
+const User = mongoose.model('User', UserSchema)
 
 module.exports = User

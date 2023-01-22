@@ -18,6 +18,10 @@ const SubGredditSchema = new mongoose.Schema({
         ref: 'User'
     },
     CreatedAt: Date,
+    Posts: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Posts'
+    }]
 })
 
 SubGredditSchema.set('toJSON', {

@@ -190,5 +190,18 @@ UserRouter.post('/following/remove', middleware.tokenExtractor, middleware.userE
     }
 })
 
+UserRouter.get('/subgreddits',middleware.tokenExtractor,middleware.userExtractor, async (req,res,next) => {
+    let user = req.user
+    const data =await User.findById(user._id,{SubGreddits: true,_id: false}).populate({
+        path: 'SubGreddits',
+        populate: {
+            path: 'id',
+            model: 'SubGreddit',
+            select: {_id: true}
+        },
+        select: {SubGreddits: true,_id: false}
+    })
+    res.status(200).json(data.SubGreddits)
+})
 
 module.exports = UserRouter
