@@ -55,14 +55,12 @@ SubGredditRouter.delete('/:id', async (req, res, next) => {
             return res.status(401).json({ error: 'You are not allowed to delete this' })
         }
         
-        console.log("old",user.SubGreddits)
         user.SubGreddits = user.SubGreddits.filter(f => f.id.toString() !== id)
         
-        console.log("new",user.SubGreddits)
-        console.log("deleting",await SubGreddit.findById(id))
 
         await user.save()
         await SubGreddit.findByIdAndDelete(id)
+        await Post.deleteMany({PostedIn: id})
 
         res.status(204).end()
 

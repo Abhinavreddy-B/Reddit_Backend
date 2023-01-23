@@ -1,6 +1,7 @@
 const express = require('express')
 const Post = require('../models/Posts')
 const SubGreddit = require('../models/SubGreddit')
+const User = require('../models/user')
 
 const PostsRouter = express.Router()
 
@@ -19,7 +20,7 @@ PostsRouter.post('/:id', async (req, res, next) => {
     const newPost = new Post({
         Text,
         PostedBy: {
-            Name: user.Name,
+            Name: user.firstName+' '+user.lastName,
             id: user._id
         },
         PostedIn: id,
@@ -27,6 +28,9 @@ PostsRouter.post('/:id', async (req, res, next) => {
         Downvotes: 0,
         Comments: [],
     })
+
+    console.log(newPost.PostedBy)
+
     try {
         const relatedSubGreddit = await SubGreddit.findById(id)
         const saved = await newPost.save()
@@ -64,9 +68,9 @@ PostsRouter.post('/comment/:id', async (req, res, next) => {
             console.log(e)
             res.status(500).end()
         }
-    }catch(e){
+    } catch (e) {
         console.log(e)
-        res.status(404).json({error: 'Post does not exist'})
+        res.status(404).json({ error: 'Post does not exist' })
     }
 })
 
@@ -84,7 +88,7 @@ PostsRouter.get('/:id/upvote', async (req, res, next) => {
         }
 
         try {
-            post.Upvotes+=1
+            post.Upvotes += 1
             await post.save()
 
             res.status(201).end()
@@ -92,9 +96,9 @@ PostsRouter.get('/:id/upvote', async (req, res, next) => {
             console.log(e)
             res.status(500).end()
         }
-    }catch(e){
+    } catch (e) {
         console.log(e)
-        res.status(404).json({error: 'Post does not exist'})
+        res.status(404).json({ error: 'Post does not exist' })
     }
 })
 
@@ -112,7 +116,7 @@ PostsRouter.get('/:id/downvote', async (req, res, next) => {
         }
 
         try {
-            post.Downvotes+=1
+            post.Downvotes += 1
             await post.save()
 
             res.status(201).end()
@@ -120,9 +124,87 @@ PostsRouter.get('/:id/downvote', async (req, res, next) => {
             console.log(e)
             res.status(500).end()
         }
-    }catch(e){
+    } catch (e) {
         console.log(e)
-        res.status(404).json({error: 'Post does not exist'})
+        res.status(404).json({ error: 'Post does not exist' })
+    }
+})
+
+PostsRouter.get('/:id/save', async (req, res, next) => {
+    let user = req.user
+    const Postid = req.params.id
+
+    try {
+
+        let post = await Post.findById(Postid)
+        const id = post.PostedIn.toString()
+
+        if (!user.SubGreddits.find(f => f.id.toString() === id && f.role !== 'left')) {
+            return res.status(401).json({ error: 'You cant access this' })
+        }
+
+        try {
+            // console.log(user.Saved)
+            // console.log(user.Saved.find(f => console.log(f) || true),Postid)
+            if (!user.Saved || !user.Saved.find(f => f.toString() === Postid)) {
+                user.Saved = user.Saved ? [...(user.Saved), Postid] : [Postid]
+                await user.save()
+            }
+
+            res.status(201).end()
+        } catch (e) {
+            console.log(e)
+            res.status(500).end()
+        }
+    } catch (e) {
+        console.log(e)
+        res.status(404).json({ error: 'Post does not exist' })
+    }
+})
+
+PostsRouter.get('/:id/followowner', async (req, res, next) => {
+    let user = req.user
+    const PostId = req.params.id
+
+    const found = await Post.findById(PostId,{PostedBy: true})
+
+    if(found === null){
+        return res.status(400).json({error: 'post does not exist'})
+    }
+    const FollowingId = found.PostedBy.id
+    
+    console.log(FollowingId,user._id)
+    if(FollowingId.toString() === user._id.toString()){
+        return res.status(400).json({error: 'You can not follow yourself'})
+    }
+
+    let Following = await User.findById(FollowingId)
+
+    if (Following === null) {
+        return res.status(400).json({ error: 'Person does not exist' })
+    }
+
+
+    if (!user.Following.find(f => f.toString() === FollowingId) && !Following.Followers.find(f => f.toString() === user._id.toString())) {
+
+        try {
+
+            user.Following = [...(user.Following), FollowingId]
+            user.FollowingCount += 1
+
+            Following.Followers = [...(Following.Followers), user._id]
+            Following.FollowerCount += 1
+            
+            await user.save()
+            await Following.save()
+
+            return res.status(201).end()
+        }catch(e){
+            console.log(e)
+            return res.status(500).json({error: 'Failed to Follow'})
+        }
+    } else {
+        return res.status(201).end()
     }
 })
 

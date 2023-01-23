@@ -40,7 +40,8 @@ UserRouter.post('/signup', async (req, res, next) => {
         FollowerCount: 0,
         Followers: [],
         FollowingCount: 0,
-        Following: []
+        Following: [],
+        Saved: [],
     })
 
     try {
@@ -197,7 +198,7 @@ UserRouter.get('/subgreddits',middleware.tokenExtractor,middleware.userExtractor
         populate: {
             path: 'id',
             model: 'SubGreddit',
-            select: {_id: true}
+            select: {id:true , _id: true}
         },
         select: {SubGreddits: true,_id: false}
     })

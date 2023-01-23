@@ -27,6 +27,10 @@ const UserSchema = new mongoose.Schema({
             ref: 'SubGreddit'
         },
         role: String
+    }],
+    Saved: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Post'
     }]
 })
 
