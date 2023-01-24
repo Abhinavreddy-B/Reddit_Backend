@@ -205,4 +205,33 @@ UserRouter.get('/subgreddits',middleware.tokenExtractor,middleware.userExtractor
     res.status(200).json(data.SubGreddits)
 })
 
+UserRouter.get('/savedposts',middleware.tokenExtractor,middleware.userExtractor, async (req,res,next) => {
+    let user = req.user
+    const data = await User.findById(user._id,{Saved: true}).populate({
+        path: 'Saved',
+        model: 'Post',
+        populate: [{
+            path: 'PostedIn',
+            model: 'SubGreddit',
+            select: {Name: true,_id: true}
+        }]
+    })
+    res.status(200).json(data.Saved)
+})
+
+UserRouter.delete('/savedposts/:id',middleware.tokenExtractor,middleware.userExtractor, async (req,res,next) => {
+    let user = req.user
+    let PostId = req.params.id
+
+    if(!user.Saved.find(p => p._id.toString() === PostId)){
+        return  res.status(400).json({error: 'You did not save this Post!'})
+    }
+
+    user.Saved = user.Saved.filter(p => p._id.toString() !== PostId)
+
+    await user.save()
+    res.status(200).json()
+})
+
+
 module.exports = UserRouter
