@@ -32,6 +32,13 @@ const SubGredditSchema = new mongoose.Schema({
     Requests: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
+    }],
+    Rejected: [{
+        date: Date,
+        user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        }
     }]
 })
 

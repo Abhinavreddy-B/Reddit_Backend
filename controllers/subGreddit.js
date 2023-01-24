@@ -3,6 +3,7 @@ const Post = require('../models/Posts');
 const SubGreddit = require('../models/SubGreddit')
 const User = require('../models/user');
 const SubGredditRouter = express.Router()
+const config = require('../utils/config')
 
 SubGredditRouter.get('/all', async (req, res, next) => {
     return res.status(200).json(await SubGreddit.find({}))
@@ -149,6 +150,11 @@ SubGredditRouter.get('/:id/join', async (req, res, next) => {
         return res.status(400).json({ error: 'You have previously sent join request already' })
     }
 
+    found.Rejected = found.Rejected ? found.Rejected.filter(f => new Date().getTime()-f.date.getTime() <=  (config.RejectTimeout)):[]
+    if (found.Rejected.find(f => f.user.toString() === user._id.toString())) {
+        return res.status(400).json({ error: 'Since Moderator rejected your request, you have to wait for 7 days to request again' })
+    }
+
     found.Requests.push(user._id)
 
     try {
@@ -253,6 +259,11 @@ SubGredditRouter.post('/reject', async (req, res, next) => {
         return res.status(400).json({error: 'User did not request for joining'})
     }
 
+    if(foundSubGreddit.Rejected){
+        foundSubGreddit.Rejected.push({date: new Date(),user: newUser._id})
+    }else{
+        foundSubGreddit.Rejected = [{date: new Date(),user: newUser._id}]
+    }
     foundSubGreddit.Requests = foundSubGreddit.Requests.filter(f => f.toString() !== userId)
 
     try{
