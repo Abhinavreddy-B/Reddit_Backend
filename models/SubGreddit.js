@@ -21,17 +21,28 @@ const SubGredditSchema = new mongoose.Schema({
     Posts: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Posts'
+    }],
+    People: [{
+        ref: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        blocked: Boolean,
+    }],
+    Requests: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
     }]
 })
 
 SubGredditSchema.set('toJSON', {
-    transform: (document,returnedObject) => {
+    transform: (document, returnedObject) => {
         returnedObject.id = returnedObject._id
         delete returnedObject._id
         delete returnedObject.__v
     }
 })
 
-const SubGreddit = mongoose.model('SubGreddit',SubGredditSchema)
+const SubGreddit = mongoose.model('SubGreddit', SubGredditSchema)
 
 module.exports = SubGreddit

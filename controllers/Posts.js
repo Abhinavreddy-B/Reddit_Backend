@@ -15,7 +15,14 @@ PostsRouter.post('/:id', async (req, res, next) => {
         return res.status(401).json({ error: 'You cant access this' })
     }
 
-    const { Text } = req.body
+    let { Text } = req.body
+    const relatedSubGreddit = await SubGreddit.findById(id)
+
+    relatedSubGreddit.Banned.forEach(word => {
+        let regex = new RegExp(`\\b${word}\\b`,"gi")
+        Text = Text.replace(regex,(x) => {return '*'.repeat(x.length)})
+    })
+
 
     const newPost = new Post({
         Text,
@@ -32,7 +39,6 @@ PostsRouter.post('/:id', async (req, res, next) => {
     console.log(newPost.PostedBy)
 
     try {
-        const relatedSubGreddit = await SubGreddit.findById(id)
         const saved = await newPost.save()
 
         relatedSubGreddit.Posts.push(saved._id)
