@@ -18,6 +18,10 @@ PostsRouter.post('/:id', async (req, res, next) => {
     let { Text } = req.body
     const relatedSubGreddit = await SubGreddit.findById(id)
 
+    if(relatedSubGreddit.People.find(f => f.ref.toString() === user._id.toString() && f.blocked === true)){
+        return res.status(401).json({error: 'You are Blocked, You cant Post'})
+    }
+
     relatedSubGreddit.Banned.forEach(word => {
         let regex = new RegExp(`\\b${word}\\b`,"gi")
         Text = Text.replace(regex,(x) => {return '*'.repeat(x.length)})

@@ -75,6 +75,7 @@ UserRouter.post('/login', async (req, res, next) => {
     const toSend = {
         userName: user.userName,
         id: user._id,
+        Name: user.firstName+' '+user.lastName,
     }
 
     const token = jwt.sign(toSend, config.Secret)

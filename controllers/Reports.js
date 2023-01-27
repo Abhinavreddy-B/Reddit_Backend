@@ -100,15 +100,21 @@ ReportsRouter.get('/:id/block',async (req,res,next) => {
 
     const post = await Post.findById(report.Post._id)
 
-    post.PostedBy.Name = 'Blocked User'
-    // const foundSubGreddit = await SubGreddit.findById(SubGredditId)
+    // post.PostedBy.Name = 'Blocked User'
+    const foundSubGreddit = await SubGreddit.findById(SubGredditId)
     
     // foundSubGreddit.Reports = foundSubGreddit.Reports.filter(f => f.toString() !== reportId)
 
+    // foundSubGreddit.Post 
     // Report.findByIdAndDelete(reportId)
 
-    await post.save()
-
+    // await post.save()
+    // console.log("Hi",foundSubGreddit)
+    foundSubGreddit.People = foundSubGreddit.People.map(f => f.ref.toString() === post.PostedBy.id.toString() ? {...f,blocked: true}: f)
+    
+    // console.log("Here",foundSubGreddit)
+    await Post.updateMany({PostedBy: {Name: post.PostedBy.Name,id: post.PostedBy.id},PostedIn: SubGredditId},{PostedBy: {Name: 'Blocked User',id: post.PostedBy.id}})
+    await foundSubGreddit.save()
     return res.status(200).end()
 })
 
@@ -146,6 +152,7 @@ ReportsRouter.get('/:id/delete',async (req,res,next) => {
 
     await foundSubGreddit.save()
     await Post.findByIdAndDelete(post._id)
+    await User.updateMany({Saved: post._id},{$pull: {Saved: post._id}})
     await Report.deleteMany({Post: post._id})
 
     return res.status(200).end()
