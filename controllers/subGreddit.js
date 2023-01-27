@@ -28,7 +28,9 @@ SubGredditRouter.post('/', async (req, res, next) => {
         Owner: user._id,
         CreatedAt: new Date(),
         People: [],
-        Requests: []
+        Requests: [],
+        Rejected: [],
+        Reports: []
     })
 
     try {
@@ -51,7 +53,6 @@ SubGredditRouter.delete('/:id', async (req, res, next) => {
     let user = req.user
     const id = req.params.id
     try {
-        console.log("deleteing", req.params.id)
         const found = await SubGreddit.findById(id)
         // console.log(found.Owner.toString())
         if (found.Owner.toString() !== user._id.toString()) {
@@ -122,7 +123,6 @@ SubGredditRouter.get('/:id/users', async (req, res, next) => {
             select: { ref: true, blocked: true, _id: false }
         })
 
-        console.log(data.People)
         return res.status(200).json(data.People)
     } catch (e) {
         console.log(e)
@@ -150,7 +150,7 @@ SubGredditRouter.get('/:id/join', async (req, res, next) => {
         return res.status(400).json({ error: 'You have previously sent join request already' })
     }
 
-    found.Rejected = found.Rejected ? found.Rejected.filter(f => new Date().getTime()-f.date.getTime() <=  (config.RejectTimeout)):[]
+    found.Rejected = found.Rejected ? found.Rejected.filter(f => new Date().getTime() - f.date.getTime() <= (config.RejectTimeout)) : []
     if (found.Rejected.find(f => f.user.toString() === user._id.toString())) {
         return res.status(400).json({ error: 'Since Moderator rejected your request, you have to wait for 7 days to request again' })
     }
@@ -181,7 +181,6 @@ SubGredditRouter.get('/:id/requests', async (req, res, next) => {
             select: { firstName: true, lastName: true, _id: true }
         })
 
-        console.log(data.Requests)
         res.status(200).json(data.Requests)
     } catch (e) {
         console.log(e)
@@ -193,7 +192,6 @@ SubGredditRouter.post('/accept', async (req, res, next) => {
     const { SubGredditId, userId } = req.body
     const user = req.user
 
-    console.log(user)
     if (!user.SubGreddits.find(f => f.id.toString() === SubGredditId && f.role === 'mod')) {
         return res.status(401).json({ error: 'You cant access this' })
     }
@@ -209,8 +207,8 @@ SubGredditRouter.post('/accept', async (req, res, next) => {
     }
 
     // If request was not found
-    if(!foundSubGreddit.Requests.find(f => f.toString() === userId)){
-        return res.status(400).json({error: 'User did not request for joining'})
+    if (!foundSubGreddit.Requests.find(f => f.toString() === userId)) {
+        return res.status(400).json({ error: 'User did not request for joining' })
     }
 
     newUser.SubGreddits.push({
@@ -223,13 +221,13 @@ SubGredditRouter.post('/accept', async (req, res, next) => {
         ref: userId,
         blocked: false
     })
-    foundSubGreddit.PeopleCount+=1
+    foundSubGreddit.PeopleCount += 1
 
-    try{
+    try {
         await newUser.save()
         await foundSubGreddit.save()
-        return res.status(200).json({Name: newUser.firstName+' '+newUser.lastName,id: newUser._id.toString()})
-    }catch(e){
+        return res.status(200).json({ Name: newUser.firstName + ' ' + newUser.lastName, id: newUser._id.toString() })
+    } catch (e) {
         console.log(e)
         return res.status(500).json({ error: 'Some internal error' })
     }
@@ -239,7 +237,6 @@ SubGredditRouter.post('/reject', async (req, res, next) => {
     const { SubGredditId, userId } = req.body
     const user = req.user
 
-    console.log(user)
     if (!user.SubGreddits.find(f => f.id.toString() === SubGredditId && f.role === 'mod')) {
         return res.status(401).json({ error: 'You cant access this' })
     }
@@ -255,24 +252,57 @@ SubGredditRouter.post('/reject', async (req, res, next) => {
     }
 
     // If request was not found
-    if(!foundSubGreddit.Requests.find(f => f.toString() === userId)){
-        return res.status(400).json({error: 'User did not request for joining'})
+    if (!foundSubGreddit.Requests.find(f => f.toString() === userId)) {
+        return res.status(400).json({ error: 'User did not request for joining' })
     }
 
-    if(foundSubGreddit.Rejected){
-        foundSubGreddit.Rejected.push({date: new Date(),user: newUser._id})
-    }else{
-        foundSubGreddit.Rejected = [{date: new Date(),user: newUser._id}]
+    if (foundSubGreddit.Rejected) {
+        foundSubGreddit.Rejected.push({ date: new Date(), user: newUser._id })
+    } else {
+        foundSubGreddit.Rejected = [{ date: new Date(), user: newUser._id }]
     }
     foundSubGreddit.Requests = foundSubGreddit.Requests.filter(f => f.toString() !== userId)
 
-    try{
+    try {
         await foundSubGreddit.save()
-        return res.status(200).json({Name: newUser.firstName+' '+newUser.lastName,id: newUser._id.toString()})
-    }catch(e){
+        return res.status(200).json({ Name: newUser.firstName + ' ' + newUser.lastName, id: newUser._id.toString() })
+    } catch (e) {
         console.log(e)
         return res.status(500).json({ error: 'Some internal error' })
     }
+})
+
+SubGredditRouter.get('/:id/reports', async (req, res, next) => {
+    const user = req.user
+    const SubGredditId = req.params.id
+
+    if (!user.SubGreddits.find(f => f.id.toString() === SubGredditId && f.role === 'mod')) {
+        return res.status(401).json({ error: 'You cant access this' })
+    }
+
+    const reports = await SubGreddit.findById(SubGredditId).populate({
+        path: 'Reports',
+        model: 'Report',
+        populate: [{
+            path: 'ReportedBy',
+            model: 'User',
+            select: {firstName: true,lastName: true,_id: true}  
+        },{
+            path: 'Post',
+            model: 'Post',
+            select: {PostedBy: true,Text: true,_id: true}
+        },{
+            path: 'ReportedOn',
+            model: 'User',
+            select: {userName: true,firstName: true,lastName: true,_id: true}
+        }]
+    })
+
+    // found.Rejected.filter(f => new Date().getTime() - f.date.getTime() <= (config.RejectTimeout))
+    reports.Reports = reports.Reports.filter(f => new Date().getTime() - f.ReportedAt.getTime() <= config.ReportTimeout)
+    
+    await reports.save()
+    res.status(200).json(reports.Reports)
 })
 
 module.exports = SubGredditRouter

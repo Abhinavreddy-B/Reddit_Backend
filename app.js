@@ -27,6 +27,9 @@ app.use('/api/subgreddit',middleware.tokenExtractor,middleware.userExtractor,Sub
 const PostsRouter = require('./controllers/Posts')
 app.use('/api/post',middleware.tokenExtractor,middleware.userExtractor,PostsRouter)
 
+const ReportsRouter = require('./controllers/Reports')
+app.use('/api/report',middleware.tokenExtractor,middleware.userExtractor,ReportsRouter)
+
 app.use(middleware.errorHandler)
 
 module.exports = app

@@ -39,7 +39,7 @@ const SubGredditSchema = new mongoose.Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User'
         }
-    }]
+    }],
 })
 
 SubGredditSchema.set('toJSON', {

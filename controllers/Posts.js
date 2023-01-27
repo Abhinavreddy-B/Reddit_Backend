@@ -36,8 +36,6 @@ PostsRouter.post('/:id', async (req, res, next) => {
         Comments: [],
     })
 
-    console.log(newPost.PostedBy)
-
     try {
         const saved = await newPost.save()
 

@@ -31,6 +31,10 @@ const UserSchema = new mongoose.Schema({
     Saved: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Post'
+    }],
+    Reports: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Report'
     }]
 })
 

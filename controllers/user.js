@@ -171,7 +171,6 @@ UserRouter.post('/following/remove', middleware.tokenExtractor, middleware.userE
 
         let Following = await User.findById(FollowingId)
 
-        console.log(user.Following.find(f => f.toString() === FollowingId))
         if (user.Following.find(f => f.toString() === FollowingId) && Following.Followers.find(f => f.toString() === user._id.toString())) {
             user.Following = user.Following.filter(f => f._id.toString() !== FollowingId)
             user.FollowingCount -= 1
@@ -232,6 +231,5 @@ UserRouter.delete('/savedposts/:id',middleware.tokenExtractor,middleware.userExt
     await user.save()
     res.status(200).json()
 })
-
 
 module.exports = UserRouter
