@@ -40,6 +40,10 @@ const SubGredditSchema = new mongoose.Schema({
             ref: 'User'
         }
     }],
+    Reports: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Report'
+    }]
 })
 
 SubGredditSchema.set('toJSON', {
