@@ -30,7 +30,8 @@ ReportsRouter.post('/',async (req,res,next) => {
         Concern,
         Post: found._id,
         ReportedOn: found.PostedBy.id,
-        ReportedAt: new Date()
+        ReportedAt: new Date(),
+        SubGreddit: SubGredditId
     })
 
     // console.log(newReport)
@@ -152,7 +153,7 @@ ReportsRouter.get('/:id/delete',async (req,res,next) => {
 
     await foundSubGreddit.save()
     await Post.findByIdAndDelete(post._id)
-    await User.updateMany({Saved: post._id},{$pull: {Saved: post._id}})
+    await User.updateMany({Saved: {$elemMatch: {Post: post._id}}},{$pull: {Saved: {Post: post._id}}})
     await Report.deleteMany({Post: post._id})
 
     return res.status(200).end()

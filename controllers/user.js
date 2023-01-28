@@ -209,12 +209,14 @@ UserRouter.get('/savedposts',middleware.tokenExtractor,middleware.userExtractor,
     let user = req.user
     const data = await User.findById(user._id,{Saved: true}).populate({
         path: 'Saved',
-        model: 'Post',
         populate: [{
-            path: 'PostedIn',
+            path: 'Post',
+            model: 'Post',
+        },{
+            path: 'SubGreddit',
             model: 'SubGreddit',
             select: {Name: true,_id: true}
-        }]
+        }],
     })
     res.status(200).json(data.Saved)
 })

@@ -154,8 +154,8 @@ PostsRouter.get('/:id/save', async (req, res, next) => {
         try {
             // console.log(user.Saved)
             // console.log(user.Saved.find(f => console.log(f) || true),Postid)
-            if (!user.Saved || !user.Saved.find(f => f.toString() === Postid)) {
-                user.Saved = user.Saved ? [...(user.Saved), Postid] : [Postid]
+            if (!user.Saved || !user.Saved.find(f => f.Post.toString() === Postid)) {
+                user.Saved = user.Saved ? [...(user.Saved), {SubGreddit: id,Post: Postid}] : [{SubGreddit: id,Post: Postid}]
                 await user.save()
             }
 

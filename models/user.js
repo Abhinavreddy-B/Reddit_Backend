@@ -29,8 +29,14 @@ const UserSchema = new mongoose.Schema({
         role: String
     }],
     Saved: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Post'
+        SubGreddit: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'SubGreddit'
+        },
+        Post: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Post'
+        }
     }],
     Reports: [{
         type: mongoose.Schema.Types.ObjectId,

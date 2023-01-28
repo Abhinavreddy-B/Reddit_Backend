@@ -1,5 +1,6 @@
 const express = require('express');
 const Post = require('../models/Posts');
+const Report = require('../models/Reports');
 const SubGreddit = require('../models/SubGreddit')
 const User = require('../models/user');
 const SubGredditRouter = express.Router()
@@ -59,12 +60,15 @@ SubGredditRouter.delete('/:id', async (req, res, next) => {
             return res.status(401).json({ error: 'You are not allowed to delete this' })
         }
 
-        user.SubGreddits = user.SubGreddits.filter(f => f.id.toString() !== id)
+        // user.SubGreddits = user.SubGreddits.filter(f => f.id.toString() !== id)
 
 
-        await user.save()
-        await SubGreddit.findByIdAndDelete(id)
+        // await user.save()
+        await User.updateMany({SubGreddits: {$elemMatch: {id: id}}},{$pull: {SubGreddits: {id}}})
+        await User.updateMany({Saved: {$elemMatch: {SubGreddit: id}}},{$pull: {Saved: {SubGreddit: id}}})
+        await Report.deleteMany({SubGreddit: id})
         await Post.deleteMany({ PostedIn: id })
+        await SubGreddit.findByIdAndDelete(id)
 
         res.status(204).end()
 
@@ -84,6 +88,7 @@ SubGredditRouter.delete('/leave/:id', async (req, res, next) => {
         return res.status(400).json({ erro: 'You Are a Moderator. You cant leave' })
     }
     user.SubGreddits = user.SubGreddits.map(f => f.id.toString() !== id ? f : { ...f, role: 'left' })
+    await SubGreddit.findByIdAndUpdate(id,{$inc: {PeopleCount: -1},$pull: {People: {ref: user._id}}})
     await user.save()
     return res.status(200).end()
 })
