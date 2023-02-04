@@ -31,7 +31,16 @@ SubGredditRouter.post('/', async (req, res, next) => {
         People: [],
         Requests: [],
         Rejected: [],
-        Reports: []
+        Reports: [],
+        GrowthStat: [{
+            date: new Date(),
+            delta: 1
+        }],
+        PostsVsDateStat: [],
+        VisitStat: [],
+        ReportsVsDel: [],
+        totalReportedCnt: 0,
+        totalDeletedCount: 0,
     })
 
     try {
@@ -88,7 +97,7 @@ SubGredditRouter.delete('/leave/:id', async (req, res, next) => {
         return res.status(400).json({ erro: 'You Are a Moderator. You cant leave' })
     }
     user.SubGreddits = user.SubGreddits.map(f => f.id.toString() !== id ? f : { ...f, role: 'left' })
-    await SubGreddit.findByIdAndUpdate(id,{$inc: {PeopleCount: -1},$pull: {People: {ref: user._id}}})
+    await SubGreddit.findByIdAndUpdate(id,{$inc: {PeopleCount: -1},$pull: {People: {ref: user._id}},$push: {GrowthStat: {date: new Date(),delta: -1}}})
     await user.save()
     return res.status(200).end()
 })
@@ -106,6 +115,11 @@ SubGredditRouter.get('/:id', async (req, res, next) => {
         path: 'Posts',
         model: Post,
     })
+
+    console.log("Hello")
+    found.VisitStat.push({date: new Date(),delta: 1})
+
+    await found.save()
     res.status(200).json(found)
 })
 
@@ -227,6 +241,19 @@ SubGredditRouter.post('/accept', async (req, res, next) => {
         blocked: false
     })
     foundSubGreddit.PeopleCount += 1
+    const today = new Date()
+    // if(foundSubGreddit.GrowthStat.find(day => today.getFullYear() === day.getFullYear() && today.getMonth() === day.getMonth() && today.getDate() === day.getDate())){
+    //     foundSubGreddit.GrowthStat.map(day => (today.getFullYear() === day.getFullYear() && today.getMonth() === day.getMonth() && today.getDate() === day.getDate())?{...day,count: day.count+1}:day)
+    // }else{
+    //     foundSubGreddit.GrowthStat.push({
+    //         date: new Date(),
+    //         count: 
+    //     })
+    // }
+    foundSubGreddit.GrowthStat.push({
+        date: new Date(),
+        delta: 1
+    })
 
     try {
         await newUser.save()

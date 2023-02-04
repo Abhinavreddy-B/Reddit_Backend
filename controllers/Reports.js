@@ -40,7 +40,8 @@ ReportsRouter.post('/',async (req,res,next) => {
 
     const saved = await newReport.save()
     In.Reports = In.Reports ? [...In.Reports,saved._id] : [saved._id]
-
+    In.totalReportedCnt = In.totalReportedCnt + 1
+    In.ReportsVsDel.push({reported: In.totalReportedCnt,deletedDelta: 0})
     await In.save()
 
     res.status(201).end()
@@ -149,6 +150,10 @@ ReportsRouter.get('/:id/delete',async (req,res,next) => {
     foundSubGreddit.Posts = foundSubGreddit.Posts.filter(f => f.toString() !== post._id.toString())
     // foundSubGreddit.Reports = foundSubGreddit.Reports.filter(f => f.toString() !== reportId)
     foundSubGreddit.PostsCount = foundSubGreddit.Posts.length
+    foundSubGreddit.ReportsVsDel.push({
+        reported: foundSubGreddit.totalReportedCnt,
+        deletedDelta: 1
+    })
     // Report.findByIdAndDelete(reportId)
 
     await foundSubGreddit.save()

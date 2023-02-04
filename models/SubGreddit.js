@@ -43,7 +43,34 @@ const SubGredditSchema = new mongoose.Schema({
     Reports: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Report'
-    }]
+    }],
+    GrowthStat: [{
+        date: {
+            type: Date,
+            default: new Date(),
+        },
+        delta: Number
+    }],
+    PostsVsDateStat: [{
+        date: {
+            type: Date,
+            default: new Date(),
+        },
+        delta: Number
+    }],
+    VisitStat: [{
+        date: {
+            type: Date,
+            default: new Date(),
+        },
+        delta: Number
+    }],
+    ReportsVsDel: [{
+        reported: Number,
+        deletedDelta: Number
+    }],
+    totalReportedCnt: Number,
+    totalDeletedCount: Number
 })
 
 SubGredditSchema.set('toJSON', {

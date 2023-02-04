@@ -45,6 +45,10 @@ PostsRouter.post('/:id', async (req, res, next) => {
 
         relatedSubGreddit.Posts.push(saved._id)
         relatedSubGreddit.PostsCount += 1
+        relatedSubGreddit.PostsVsDateStat.push({
+            date: new Date(),
+            delta: 1
+        })
         await relatedSubGreddit.save()
 
         return res.status(201).json(saved)
