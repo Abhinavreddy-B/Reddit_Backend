@@ -6,13 +6,15 @@ const User = require('../models/user');
 const SubGredditRouter = express.Router()
 const config = require('../utils/config')
 
+// get all subgreddits
 SubGredditRouter.get('/all', async (req, res, next) => {
-    return res.status(200).json(await SubGreddit.find({}))
+    return res.status(200).json(await SubGreddit.find({}, { Name: true, Description: true, Tags: true, Banned: true, PeopleCount: true, PostsCount: true, CreatedAt: true }))
 })
 
+// GET subgreddits owned by a user
 SubGredditRouter.get('/', async (req, res, next) => {
     const user = req.user
-    return res.status(200).json(await SubGreddit.find({ Owner: user._id }))
+    return res.status(200).json(await SubGreddit.find({ Owner: user._id }, { Name: true, Description: true, Tags: true, Banned: true, PeopleCount: true, PostsCount: true, CreatedAt: true }))
 })
 
 SubGredditRouter.post('/', async (req, res, next) => {
@@ -22,8 +24,8 @@ SubGredditRouter.post('/', async (req, res, next) => {
     const newSubGreddit = new SubGreddit({
         Name,
         Description,
-        Tags,
-        Banned,
+        Tags: Tags || [],
+        Banned: Banned || [],
         PeopleCount: 1,
         PostsCount: 0,
         Owner: user._id,
@@ -54,7 +56,7 @@ SubGredditRouter.post('/', async (req, res, next) => {
         res.status(200).json(response)
     } catch (e) {
         console.log(e)
-        return res.status(500).end()
+        next(e)
     }
 
 })
@@ -65,6 +67,9 @@ SubGredditRouter.delete('/:id', async (req, res, next) => {
     try {
         const found = await SubGreddit.findById(id)
         // console.log(found.Owner.toString())
+        if (found === null) {
+            return res.status(404).json({ error: 'SubGreddit not found' })
+        }
         if (found.Owner.toString() !== user._id.toString()) {
             return res.status(401).json({ error: 'You are not allowed to delete this' })
         }
@@ -73,9 +78,9 @@ SubGredditRouter.delete('/:id', async (req, res, next) => {
 
 
         // await user.save()
-        await User.updateMany({SubGreddits: {$elemMatch: {id: id}}},{$pull: {SubGreddits: {id}}})
-        await User.updateMany({Saved: {$elemMatch: {SubGreddit: id}}},{$pull: {Saved: {SubGreddit: id}}})
-        await Report.deleteMany({SubGreddit: id})
+        await User.updateMany({ SubGreddits: { $elemMatch: { id: id } } }, { $pull: { SubGreddits: { id } } })
+        await User.updateMany({ Saved: { $elemMatch: { SubGreddit: id } } }, { $pull: { Saved: { SubGreddit: id } } })
+        await Report.deleteMany({ SubGreddit: id })
         await Post.deleteMany({ PostedIn: id })
         await SubGreddit.findByIdAndDelete(id)
 
@@ -97,7 +102,7 @@ SubGredditRouter.delete('/leave/:id', async (req, res, next) => {
         return res.status(400).json({ erro: 'You Are a Moderator. You cant leave' })
     }
     user.SubGreddits = user.SubGreddits.map(f => f.id.toString() !== id ? f : { ...f, role: 'left' })
-    await SubGreddit.findByIdAndUpdate(id,{$inc: {PeopleCount: -1},$pull: {People: {ref: user._id}},$push: {GrowthStat: {date: new Date(),delta: -1}}})
+    await SubGreddit.findByIdAndUpdate(id, { $inc: { PeopleCount: -1 }, $pull: { People: { ref: user._id } }, $push: { GrowthStat: { date: new Date(), delta: -1 } } })
     await user.save()
     return res.status(200).end()
 })
@@ -111,16 +116,18 @@ SubGredditRouter.get('/:id', async (req, res, next) => {
         return res.status(401).json({ error: 'You cant access this' })
     }
 
-    const found = await SubGreddit.findById(id).populate({
-        path: 'Posts',
-        model: Post,
-    })
+    const found = await SubGreddit.findById(id)
 
     console.log("Hello")
-    found.VisitStat.push({date: new Date(),delta: 1})
+    found.VisitStat.push({ date: new Date(), delta: 1 })
 
     await found.save()
-    res.status(200).json(found)
+    res.status(200).json(
+        await SubGreddit.findById(id,{Name: true,Description: true,Tags: true,Banned: true,PeopleCount: true,PostsCount: true,Owner: true,CreatedAt: true,Posts: true,_id: true}).populate({
+            path: 'Posts',
+            model: Post
+        })
+    )
 })
 
 SubGredditRouter.get('/:id/users', async (req, res, next) => {
@@ -241,7 +248,6 @@ SubGredditRouter.post('/accept', async (req, res, next) => {
         blocked: false
     })
     foundSubGreddit.PeopleCount += 1
-    const today = new Date()
     // if(foundSubGreddit.GrowthStat.find(day => today.getFullYear() === day.getFullYear() && today.getMonth() === day.getMonth() && today.getDate() === day.getDate())){
     //     foundSubGreddit.GrowthStat.map(day => (today.getFullYear() === day.getFullYear() && today.getMonth() === day.getMonth() && today.getDate() === day.getDate())?{...day,count: day.count+1}:day)
     // }else{
@@ -318,21 +324,21 @@ SubGredditRouter.get('/:id/reports', async (req, res, next) => {
         populate: [{
             path: 'ReportedBy',
             model: 'User',
-            select: {firstName: true,lastName: true,_id: true}  
-        },{
+            select: { firstName: true, lastName: true, _id: true }
+        }, {
             path: 'Post',
             model: 'Post',
-            select: {PostedBy: true,Text: true,_id: true}
-        },{
+            select: { PostedBy: true, Text: true, _id: true }
+        }, {
             path: 'ReportedOn',
             model: 'User',
-            select: {userName: true,firstName: true,lastName: true,_id: true}
+            select: { userName: true, firstName: true, lastName: true, _id: true }
         }]
     })
 
     // found.Rejected.filter(f => new Date().getTime() - f.date.getTime() <= (config.RejectTimeout))
     reports.Reports = reports.Reports.filter(f => new Date().getTime() - f.ReportedAt.getTime() <= config.ReportTimeout)
-    
+
     await reports.save()
     res.status(200).json(reports.Reports)
 })

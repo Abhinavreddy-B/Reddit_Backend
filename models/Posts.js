@@ -1,7 +1,10 @@
 const { default: mongoose } = require("mongoose");
 
 const PostSchema = new mongoose.Schema({
-    Text: String,
+    Text: {
+        type: String,
+        required: [true,'any Post requiresa some text']
+    },
     PostedBy: {
         Name: String,
         id: {

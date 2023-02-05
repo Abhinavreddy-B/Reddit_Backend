@@ -1,15 +1,22 @@
 const mongoose = require('mongoose')
 
 const SubGredditSchema = new mongoose.Schema({
-    Name: String,
-    Description: String,
+    Name: {
+        type: String,
+        required: [true,'Name is a required field']
+    },
+    Description: {
+        type: String,
+        required: [true,'Name is a required field']
+    },
     Tags: [{
         type: String,
-        match: /^[0-9a-z]+$/
+        match: [/^[0-9a-z]+$/,'Tags must be Lowercased, single Worded, Got {VALUE}']
     }],
     Banned: [{
         type: String,
         lowercase: true,
+        match: [/^[^ ]+$/,'Banned words must be Single Worded, GOT {VALUE}']
     }],
     PeopleCount: Number,
     PostsCount: Number,

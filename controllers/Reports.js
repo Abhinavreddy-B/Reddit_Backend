@@ -6,22 +6,22 @@ const User = require('../models/user')
 
 const ReportsRouter = express.Router()
 
-ReportsRouter.post('/',async (req,res,next) => {
+ReportsRouter.post('/', async (req, res, next) => {
     const user = req.user
-    
-    const {Concern,PostId} = req.body
 
-    const found = await Post.findById(PostId).populate('PostedIn',{_id: true,Name: true,Owner: true}) 
+    const { Concern, PostId } = req.body
+
+    const found = await Post.findById(PostId).populate('PostedIn', { _id: true, Name: true, Owner: true })
     const SubGredditId = found.PostedIn._id.toString()
 
-    if(!user.SubGreddits.find(s => s.id.toString() === SubGredditId && (s.role==='mod' || s.role === 'joined'))){
-        return res.status(401).json({error: 'You do not belong to the corresponding subgreddit'})
+    if (!user.SubGreddits.find(s => s.id.toString() === SubGredditId && (s.role === 'mod' || s.role === 'joined'))) {
+        return res.status(401).json({ error: 'You do not belong to the corresponding subgreddit' })
     }
 
-    const previous = await Report.find({ReportedBy: user._id,Post: found._id})
+    const previous = await Report.find({ ReportedBy: user._id, Post: found._id })
 
-    if(previous.length >= 1){
-        return res.status(400).json({error: 'you have already reported this post!'})
+    if (previous.length >= 1) {
+        return res.status(400).json({ error: 'you have already reported this post!' })
     }
 
     newReport = new Report({
@@ -36,38 +36,44 @@ ReportsRouter.post('/',async (req,res,next) => {
 
     // console.log(newReport)
     // const owner = await User.findById(found.PostedIn.Owner)
-    const In = await SubGreddit.findById(found.PostedIn)
+    try {
 
-    const saved = await newReport.save()
-    In.Reports = In.Reports ? [...In.Reports,saved._id] : [saved._id]
-    In.totalReportedCnt = In.totalReportedCnt + 1
-    In.ReportsVsDel.push({reported: In.totalReportedCnt,deletedDelta: 0})
-    await In.save()
+        const saved = await newReport.save()
 
-    res.status(201).end()
+        const In = await SubGreddit.findById(found.PostedIn)
+        In.Reports = In.Reports ? [...In.Reports, saved._id] : [saved._id]
+        In.totalReportedCnt = In.totalReportedCnt + 1
+        In.ReportsVsDel.push({ reported: In.totalReportedCnt, deletedDelta: 0 })
+        await In.save()
+
+        res.status(201).end()
+    }catch(e){
+        console.log(e)
+        next(e)
+    } 
 })
 
-ReportsRouter.get('/:id/ignore',async (req,res,next) => {
+ReportsRouter.get('/:id/ignore', async (req, res, next) => {
     const user = req.user
 
     const reportId = req.params.id
     const report = await Report.findById(reportId).populate({
         path: 'Post',
         model: 'Post',
-        select: {_id: true,PostedIn: true}
+        select: { _id: true, PostedIn: true }
     })
 
-    if(report === null){
-        return res.status(400).json({error: 'report does not exist'})
+    if (report === null) {
+        return res.status(400).json({ error: 'report does not exist' })
     }
     const SubGredditId = report.Post.PostedIn.toString()
 
-    if(!user.SubGreddits.find(f => f.id.toString() === SubGredditId && f.role === 'mod')){
-        return res.status(401).json({error: 'You are not allowed to do this'})
+    if (!user.SubGreddits.find(f => f.id.toString() === SubGredditId && f.role === 'mod')) {
+        return res.status(401).json({ error: 'You are not allowed to do this' })
     }
 
     // const foundSubGreddit = await SubGreddit.findById(SubGredditId)
-    
+
     // foundSubGreddit.Reports = foundSubGreddit.Reports.filter(f => f.toString() !== reportId)
 
     // Report.findByIdAndDelete(reportId)
@@ -78,33 +84,33 @@ ReportsRouter.get('/:id/ignore',async (req,res,next) => {
     return res.status(200).end()
 })
 
-ReportsRouter.get('/:id/block',async (req,res,next) => {
+ReportsRouter.get('/:id/block', async (req, res, next) => {
     const user = req.user
 
     const reportId = req.params.id
     const report = await Report.findById(reportId).populate({
         path: 'Post',
         model: 'Post',
-        select: {_id: true,PostedIn: true}
+        select: { _id: true, PostedIn: true }
     })
 
-    if(report === null){
-        return res.status(400).json({error: 'report does not exist'})
+    if (report === null) {
+        return res.status(400).json({ error: 'report does not exist' })
     }
-    if(report.Ignored === true){
-        return res.status(400).json({error: 'You cant do this action since you ignored the report'})
+    if (report.Ignored === true) {
+        return res.status(400).json({ error: 'You cant do this action since you ignored the report' })
     }
     const SubGredditId = report.Post.PostedIn.toString()
 
-    if(!user.SubGreddits.find(f => f.id.toString() === SubGredditId && f.role === 'mod')){
-        return res.status(401).json({error: 'You are not allowed to do this'})
+    if (!user.SubGreddits.find(f => f.id.toString() === SubGredditId && f.role === 'mod')) {
+        return res.status(401).json({ error: 'You are not allowed to do this' })
     }
 
     const post = await Post.findById(report.Post._id)
 
     // post.PostedBy.Name = 'Blocked User'
     const foundSubGreddit = await SubGreddit.findById(SubGredditId)
-    
+
     // foundSubGreddit.Reports = foundSubGreddit.Reports.filter(f => f.toString() !== reportId)
 
     // foundSubGreddit.Post 
@@ -112,34 +118,34 @@ ReportsRouter.get('/:id/block',async (req,res,next) => {
 
     // await post.save()
     // console.log("Hi",foundSubGreddit)
-    foundSubGreddit.People = foundSubGreddit.People.map(f => f.ref.toString() === post.PostedBy.id.toString() ? {...f,blocked: true}: f)
-    
+    foundSubGreddit.People = foundSubGreddit.People.map(f => f.ref.toString() === post.PostedBy.id.toString() ? { ...f, blocked: true } : f)
+
     // console.log("Here",foundSubGreddit)
-    await Post.updateMany({PostedBy: {Name: post.PostedBy.Name,id: post.PostedBy.id},PostedIn: SubGredditId},{PostedBy: {Name: 'Blocked User',id: post.PostedBy.id}})
+    await Post.updateMany({ PostedBy: { Name: post.PostedBy.Name, id: post.PostedBy.id }, PostedIn: SubGredditId }, { PostedBy: { Name: 'Blocked User', id: post.PostedBy.id } })
     await foundSubGreddit.save()
     return res.status(200).end()
 })
 
-ReportsRouter.get('/:id/delete',async (req,res,next) => {
+ReportsRouter.get('/:id/delete', async (req, res, next) => {
     const user = req.user
 
     const reportId = req.params.id
     const report = await Report.findById(reportId).populate({
         path: 'Post',
         model: 'Post',
-        select: {_id: true,PostedIn: true}
+        select: { _id: true, PostedIn: true }
     })
 
-    if(report === null){
-        return res.status(400).json({error: 'report does not exist'})
+    if (report === null) {
+        return res.status(400).json({ error: 'report does not exist' })
     }
-    if(report.Ignored === true){
-        return res.status(400).json({error: 'You cant do this action since you ignored the report'})
+    if (report.Ignored === true) {
+        return res.status(400).json({ error: 'You cant do this action since you ignored the report' })
     }
     const SubGredditId = report.Post.PostedIn.toString()
 
-    if(!user.SubGreddits.find(f => f.id.toString() === SubGredditId && f.role === 'mod')){
-        return res.status(401).json({error: 'You are not allowed to do this'})
+    if (!user.SubGreddits.find(f => f.id.toString() === SubGredditId && f.role === 'mod')) {
+        return res.status(401).json({ error: 'You are not allowed to do this' })
     }
 
     const post = await Post.findById(report.Post._id)
@@ -158,8 +164,8 @@ ReportsRouter.get('/:id/delete',async (req,res,next) => {
 
     await foundSubGreddit.save()
     await Post.findByIdAndDelete(post._id)
-    await User.updateMany({Saved: {$elemMatch: {Post: post._id}}},{$pull: {Saved: {Post: post._id}}})
-    await Report.deleteMany({Post: post._id})
+    await User.updateMany({ Saved: { $elemMatch: { Post: post._id } } }, { $pull: { Saved: { Post: post._id } } })
+    await Report.deleteMany({ Post: post._id })
 
     return res.status(200).end()
 })

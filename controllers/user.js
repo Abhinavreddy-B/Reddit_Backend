@@ -20,12 +20,6 @@ UserRouter.post('/signup', async (req, res, next) => {
         return res.status(400).json({ error: 'username and password required' })
     }
 
-    // const existingUser = await User.findOne({ userName })
-
-    // if (existingUser && existingUser !== null) {
-    //     return res.status(400).json({ error: 'Username Already Exists' })
-    // }
-
     const saltRounds = 10
     const pwHashed = await bcrypt.hash(password, saltRounds)
 
@@ -160,7 +154,7 @@ UserRouter.post('/followers/remove', middleware.tokenExtractor, middleware.userE
         }
     } catch (e) {
         console.log(e)
-        res.status(400).json({ error: 'Some Internal Error' })
+        res.status(400).json({ error: 'Follower does not exist!!!' })
     }
 })
 
@@ -187,7 +181,7 @@ UserRouter.post('/following/remove', middleware.tokenExtractor, middleware.userE
         }
     } catch (e) {
         console.log(e)
-        res.status(400).json({ error: 'Some Internal Error' })
+        res.status(400).json({ error: 'Person does not exist!!!' })
     }
 })
 

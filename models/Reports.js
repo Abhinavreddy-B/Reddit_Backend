@@ -9,7 +9,10 @@ const ReportsSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
     },
-    Concern: String,
+    Concern: {
+        type: String,
+        required: [true,'Concern is a required Field']
+    },
     Post: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Post'
