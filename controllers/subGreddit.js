@@ -17,11 +17,33 @@ SubGredditRouter.get('/', async (req, res, next) => {
     return res.status(200).json(await SubGreddit.find({ Owner: user._id }, { Name: true, Description: true, Tags: true, Banned: true, PeopleCount: true, PostsCount: true, CreatedAt: true }))
 })
 
+
+const PostsRouter = express.Router()
+const ImageKit = require("imagekit")
+
+
+const imageKit = new ImageKit({
+    publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
+    privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
+    urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT,
+})
+
 SubGredditRouter.post('/', async (req, res, next) => {
-    const { Name, Description, Tags, Banned } = req.body
+    const { Name, Description, Tags: UnParsedTags, Banned: UnParsedBanned } = req.body
+    const Tags = JSON.parse(UnParsedTags)
+    const Banned = JSON.parse(UnParsedBanned)
     const user = req.user
+    const file = req.files.image
+    console.log(Name,Description,Tags,Banned)
+    // console.log(file)
+    const up = await imageKit.upload({
+        file: file.data,
+        fileName: file.name
+    })
+    // console.log(up)
 
     const newSubGreddit = new SubGreddit({
+        ImageUrl: up.url,
         Name,
         Description,
         Tags: Tags || [],
@@ -123,7 +145,7 @@ SubGredditRouter.get('/:id', async (req, res, next) => {
 
     await found.save()
     res.status(200).json(
-        await SubGreddit.findById(id,{Name: true,Description: true,Tags: true,Banned: true,PeopleCount: true,PostsCount: true,Owner: true,CreatedAt: true,Posts: true,_id: true}).populate({
+        await SubGreddit.findById(id, {ImageUrl: true, Name: true, Description: true, Tags: true, Banned: true, PeopleCount: true, PostsCount: true, Owner: true, CreatedAt: true, Posts: true, _id: true }).populate({
             path: 'Posts',
             model: Post
         })

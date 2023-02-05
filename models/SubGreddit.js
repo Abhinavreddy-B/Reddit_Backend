@@ -1,6 +1,9 @@
 const mongoose = require('mongoose')
 
 const SubGredditSchema = new mongoose.Schema({
+    ImageUrl: {
+        type: String,
+    },
     Name: {
         type: String,
         required: [true,'Name is a required field']

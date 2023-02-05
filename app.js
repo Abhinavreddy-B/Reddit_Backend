@@ -18,6 +18,9 @@ app.use(express.json())
 const middleware = require('./utils/middleware')
 app.use(middleware.requestlogger)
 
+var fileupload = require("express-fileupload");
+app.use(fileupload())
+
 const UserRouter = require('./controllers/user')
 app.use('/api/users',UserRouter)
 
