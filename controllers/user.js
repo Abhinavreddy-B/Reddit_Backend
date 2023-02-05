@@ -20,11 +20,11 @@ UserRouter.post('/signup', async (req, res, next) => {
         return res.status(400).json({ error: 'username and password required' })
     }
 
-    const existingUser = await User.findOne({ userName })
+    // const existingUser = await User.findOne({ userName })
 
-    if (existingUser && existingUser !== null) {
-        return res.status(400).json({ error: 'Username Already Exists' })
-    }
+    // if (existingUser && existingUser !== null) {
+    //     return res.status(400).json({ error: 'Username Already Exists' })
+    // }
 
     const saltRounds = 10
     const pwHashed = await bcrypt.hash(password, saltRounds)
@@ -117,11 +117,11 @@ UserRouter.put('/', middleware.tokenExtractor, middleware.userExtractor, async (
         } else {
             newuser.passwordHash = oldpwHash
         }
-        await User.findByIdAndUpdate(user._id, newuser)
+        await User.findByIdAndUpdate(user._id, newuser,{runValidators: true})
         return res.status(200).json(await User.findById(user._id))
     } catch (e) {
         console.log(e)
-        return res.status(400).json({ error: 'internal error, Unable to Update' })
+        next(e)
     }
 })
 

@@ -45,14 +45,13 @@ const requestlogger = (request, response, next) => {
 }
 
 const errorHandler = (error, request, response, next) => {
-    console.error(error.message)
-    console.log('Entered Error Handler')
     if (error.name === 'CastError') {
         return response.status(404).send({ error: 'malformatted id' })
     } else if (error.name === 'ValidationError') {
+        console.log(error.message)
         return response.status(400).json({ error: error.message })
     } else if (error.name === 'MongoServerError') {
-        return response.status(400).json({ error: 'Entry Already Exists At Server, Kindly refresh the Page' })
+        return response.status(400).json({ error: 'Username and Email already exist, Try with something else' })
     } else if (error.name === 'JsonWebTokenError') {
         return response.status(401).json({
             error: 'invalid token'

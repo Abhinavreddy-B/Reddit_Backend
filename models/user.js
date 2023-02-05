@@ -1,15 +1,42 @@
 const mongoose = require('mongoose')
 
 const UserSchema = new mongoose.Schema({
-    firstName: String,
-    lastName: String,
-    userName: String,
+    firstName: {
+        type: String,
+        required: [true,'firstName is Required field'],
+    },
+    lastName: {
+        type: String,
+        required: [true,'lastName is Required field'],
+    },
+    userName: {
+        type: String,
+        required: [true,'userName is Required field'],
+        unique: [true,'Username Already Exists']
+    },
     Email: {
         type: String,
-        unique: true,
+        unique: [true,'Email already exists'],
+        required: [true,'Email is Required field'],
     },
-    Age: Number,
-    ContactNumber: Number,
+    Age: {
+        type: Number,
+        required: [true,'Age is Required field'],
+        min: [1, 'Age Must Be between 1 and 100'],
+        max: [100, 'Age Must Be between 1 and 100']
+    },
+    ContactNumber: {
+        type: Number,
+        required: [true,'Contact Number is Required field'],
+        validate: {
+            validator: function(v) {
+                var re = /^[0-9]{10}$/;
+                console.log(v.toString())
+                return re.test(v.toString())
+            },
+            message: 'Provided phone number is invalid.'
+        }
+    },
     passwordHash: String,
     FollowerCount: Number,
     FollowingCount: Number,
