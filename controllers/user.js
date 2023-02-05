@@ -117,7 +117,7 @@ UserRouter.put('/', middleware.tokenExtractor, middleware.userExtractor, async (
         } else {
             newuser.passwordHash = oldpwHash
         }
-        await User.findOneAndUpdate(user, newuser)
+        await User.findByIdAndUpdate(user._id, newuser)
         return res.status(200).json(await User.findById(user._id))
     } catch (e) {
         console.log(e)
