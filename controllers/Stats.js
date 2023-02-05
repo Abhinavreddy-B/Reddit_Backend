@@ -3,7 +3,7 @@ const SubGreddit = require('../models/SubGreddit')
 const StatsRouter = express.Router()
 
 const AggregateBy = (str) => {
-    return new Date(str).toLocaleString().split(':')[0]
+    return new Date(str).toLocaleString().split(',')[0]
 }
 
 StatsRouter.get('/:id/growth',async (req,res,next) => {
