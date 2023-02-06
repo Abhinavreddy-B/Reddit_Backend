@@ -33,17 +33,17 @@ SubGredditRouter.post('/', async (req, res, next) => {
     const Tags = JSON.parse(UnParsedTags)
     const Banned = JSON.parse(UnParsedBanned)
     const user = req.user
-    const file = req.files.image
+    const file = req.files ? req.files.image : null
     console.log(Name,Description,Tags,Banned)
     // console.log(file)
-    const up = await imageKit.upload({
+    const up = file ? await imageKit.upload({
         file: file.data,
         fileName: file.name
-    })
+    }): null
     // console.log(up)
 
     const newSubGreddit = new SubGreddit({
-        ImageUrl: up.url,
+        ImageUrl: up ? up.url : undefined,
         Name,
         Description,
         Tags: Tags || [],
