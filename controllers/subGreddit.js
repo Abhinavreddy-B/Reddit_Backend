@@ -194,6 +194,9 @@ SubGredditRouter.get('/:id/join', async (req, res, next) => {
         return res.status(400).json({ error: 'SubGreddit does not exist' })
     }
 
+    if(found.People.find(f => f.ref.toString() === user._id.toString() && f.blocked === true)){
+        return res.status(400).json({error: 'You have been blocked, You cant join'})
+    }
     if (found.Requests.find(f => f.toString() === user._id.toString())) {
         return res.status(400).json({ error: 'You have previously sent join request already' })
     }

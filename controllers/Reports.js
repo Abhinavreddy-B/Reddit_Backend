@@ -47,10 +47,10 @@ ReportsRouter.post('/', async (req, res, next) => {
         await In.save()
 
         res.status(201).end()
-    }catch(e){
+    } catch (e) {
         console.log(e)
         next(e)
-    } 
+    }
 })
 
 ReportsRouter.get('/:id/ignore', async (req, res, next) => {
@@ -122,6 +122,7 @@ ReportsRouter.get('/:id/block', async (req, res, next) => {
 
     // console.log("Here",foundSubGreddit)
     await Post.updateMany({ PostedBy: { Name: post.PostedBy.Name, id: post.PostedBy.id }, PostedIn: SubGredditId }, { PostedBy: { Name: 'Blocked User', id: post.PostedBy.id } })
+    await User.findByIdAndUpdate(report.ReportedOn,{$pull: {SubGreddits: {id: foundSubGreddit._id}}})
     await foundSubGreddit.save()
     return res.status(200).end()
 })
