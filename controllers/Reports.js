@@ -3,6 +3,34 @@ const Post = require('../models/Posts')
 const Report = require('../models/Reports')
 const SubGreddit = require('../models/SubGreddit')
 const User = require('../models/user')
+const config = require('../utils/config')
+const nodemailer = require('nodemailer')
+
+let transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    secure: false,
+    auth: {
+        user: config.MAIL_USERNAME,
+        pass: config.MAIL_PASSWORD,
+    }
+});
+
+const SendMail = async (to,content,subject) => {
+    let mailOptions = {
+        from: config.MAIL_USERNAME,
+        to: to,
+        subject: subject,
+        text: content
+    };
+
+    transporter.sendMail(mailOptions, function (err, data) {
+        if (err) {
+            console.log("Error " + err);
+        } else {
+            console.log("Email sent successfully");
+        }
+    });
+}
 
 const ReportsRouter = express.Router()
 
@@ -57,11 +85,15 @@ ReportsRouter.get('/:id/ignore', async (req, res, next) => {
     const user = req.user
 
     const reportId = req.params.id
-    const report = await Report.findById(reportId).populate({
+    const report = await Report.findById(reportId).populate([{
         path: 'Post',
         model: 'Post',
         select: { _id: true, PostedIn: true }
-    })
+    },{
+        path: 'ReportedOn',
+        model: 'User',
+        select: {Email: true}
+    }])
 
     if (report === null) {
         return res.status(400).json({ error: 'report does not exist' })
@@ -81,6 +113,7 @@ ReportsRouter.get('/:id/ignore', async (req, res, next) => {
 
     await report.save()
 
+    SendMail(report.ReportedOn.Email,'A Report on you was Ignored','Report in Greddit')
     return res.status(200).end()
 })
 
@@ -88,11 +121,19 @@ ReportsRouter.get('/:id/block', async (req, res, next) => {
     const user = req.user
 
     const reportId = req.params.id
-    const report = await Report.findById(reportId).populate({
+    const report = await Report.findById(reportId).populate([{
         path: 'Post',
         model: 'Post',
         select: { _id: true, PostedIn: true }
-    })
+    },{
+        path: 'ReportedOn',
+        model: 'User',
+        select: {Email: true}
+    },{
+        path: 'ReportedBy',
+        model: 'User',
+        select: {Email: true}
+    }])
 
     if (report === null) {
         return res.status(400).json({ error: 'report does not exist' })
@@ -124,6 +165,9 @@ ReportsRouter.get('/:id/block', async (req, res, next) => {
     await Post.updateMany({ PostedBy: { Name: post.PostedBy.Name, id: post.PostedBy.id }, PostedIn: SubGredditId }, { PostedBy: { Name: 'Blocked User', id: post.PostedBy.id } })
     await User.findByIdAndUpdate(report.ReportedOn,{$pull: {SubGreddits: {id: foundSubGreddit._id}}})
     await foundSubGreddit.save()
+
+    SendMail(report.ReportedOn.Email,'You were Blocked','Report in Greddit')
+    SendMail(report.ReportedBy.Email,'Considering your report, the corresponding user was blocked','Report in Greddit')
     return res.status(200).end()
 })
 
@@ -131,11 +175,19 @@ ReportsRouter.get('/:id/delete', async (req, res, next) => {
     const user = req.user
 
     const reportId = req.params.id
-    const report = await Report.findById(reportId).populate({
+    const report = await Report.findById(reportId).populate([{
         path: 'Post',
         model: 'Post',
         select: { _id: true, PostedIn: true }
-    })
+    },{
+        path: 'ReportedOn',
+        model: 'User',
+        select: {Email: true}
+    },{
+        path: 'ReportedBy',
+        model: 'User',
+        select: {Email: true}
+    }])
 
     if (report === null) {
         return res.status(400).json({ error: 'report does not exist' })
@@ -168,6 +220,8 @@ ReportsRouter.get('/:id/delete', async (req, res, next) => {
     await User.updateMany({ Saved: { $elemMatch: { Post: post._id } } }, { $pull: { Saved: { Post: post._id } } })
     await Report.deleteMany({ Post: post._id })
 
+    SendMail(report.ReportedOn.Email,'Your Post was deleted','Report in Greddit')
+    SendMail(report.ReportedBy.Email,'Considering your report, the corresponding post was deleted','Report in Greddit')
     return res.status(200).end()
 })
 
