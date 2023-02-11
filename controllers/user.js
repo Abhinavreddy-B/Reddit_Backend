@@ -1,11 +1,16 @@
 const express = require('express')
 const bcrypt = require('bcrypt')
 const config = require('../utils/config')
+const Post = require('../models/Posts')
 const User = require('../models/user')
 const jwt = require('jsonwebtoken')
 const middleware = require('../utils/middleware')
 
 const UserRouter = express.Router()
+
+UserRouter.get('/verify',middleware.tokenExtractor,middleware.userExtractor,(req,res) => {
+    return res.status(200).end()
+})
 
 UserRouter.post('/signup', async (req, res, next) => {
     const { firstName,
@@ -111,7 +116,9 @@ UserRouter.put('/', middleware.tokenExtractor, middleware.userExtractor, async (
         } else {
             newuser.passwordHash = oldpwHash
         }
-        await User.findByIdAndUpdate(user._id, newuser,{runValidators: true})
+        const olduser = await User.findByIdAndUpdate(user._id, newuser,{runValidators: true})
+        // console.log(await Post.find({ 'PostedBy.id': user._id,'PostedBy.Name': { $ne: 'Blocked User' } }))
+        await Post.updateMany({ 'PostedBy.id': user._id,'PostedBy.Name': { $ne: 'Blocked User' } },{PostedBy: {Name: `${newuser.firstName} ${newuser.lastName}`}})
         return res.status(200).json(await User.findById(user._id))
     } catch (e) {
         console.log(e)

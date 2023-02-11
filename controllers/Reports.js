@@ -45,6 +45,14 @@ ReportsRouter.post('/', async (req, res, next) => {
     if (!user.SubGreddits.find(s => s.id.toString() === SubGredditId && (s.role === 'mod' || s.role === 'joined'))) {
         return res.status(401).json({ error: 'You do not belong to the corresponding subgreddit' })
     }
+    
+    if(found.PostedBy.id.toString() === found.PostedIn.Owner.toString()){
+        return res.status(400).json({ error: 'You cannot report on the Moderator' })
+    }
+
+    if(found.PostedBy.id.toString() === user._id.toString()){
+        return res.status(400).json({ error: 'You cannot report on the Yourself' })
+    }
 
     const previous = await Report.find({ ReportedBy: user._id, Post: found._id })
 
