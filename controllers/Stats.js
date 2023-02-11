@@ -33,6 +33,19 @@ StatsRouter.get('/:id/growth',async (req,res,next) => {
       array = array.map(e => {return [e,mapped[e]]})
       
       const prefixArray = array.reduce((res, num) => [...res,[num[0], num[1] + (res[res.length - 1] ? res[res.length - 1][1]: 0)]], []);
+      
+      for(var date=data.CreatedAt;(new Date(date)) < (new Date());date.setDate(date.getDate() + 1)){
+        if(!prefixArray.find( i => AggregateBy(date) === i[0])){
+          var yesterday = new Date((new Date(date)).getTime() - 24*60*60*1000);
+          const yestvalue = prefixArray.find( i => AggregateBy(yesterday) === i[0])
+          console.log(yestvalue,prefixArray.findIndex( i => AggregateBy(yesterday) === i[0]))
+          if(!yestvalue){
+            prefixArray.splice(0,0,[AggregateBy(date),0])
+          }else{
+            prefixArray.splice(prefixArray.findIndex( i => AggregateBy(yesterday) === i[0])+1,0,[AggregateBy(date),yestvalue[1]])
+          }
+        }
+      }
       console.log(prefixArray)
       return res.status(200).json(prefixArray)
 
@@ -65,6 +78,19 @@ StatsRouter.get('/:id/postsvsdate',async (req,res,next) => {
       var array = Array.from(Object.keys(mapped));
       array = array.map(e => {return [e,mapped[e]]})
       
+
+      for(var date=data.CreatedAt;(new Date(date)) < (new Date());date.setDate(date.getDate() + 1)){
+        if(!array.find( i => AggregateBy(date) === i[0])){
+          var yesterday = new Date((new Date(date)).getTime() - 24*60*60*1000);
+          const yestvalue = array.find( i => AggregateBy(yesterday) === i[0])
+          // console.log(yestvalue,prefixArray.findIndex( i => AggregateBy(yesterday) === i[0]))
+          if(!yestvalue){
+            array.splice(0,0,[AggregateBy(date),0])
+          }else{
+            array.splice(array.findIndex( i => AggregateBy(yesterday) === i[0])+1,0,[AggregateBy(date),0])
+          }
+        }
+      }
       console.log("Hi")
       return res.status(200).json(array)
 
@@ -96,6 +122,18 @@ StatsRouter.get('/:id/visitorsvsdate',async (req,res,next) => {
       var array = Array.from(Object.keys(mapped));
       array = array.map(e => {return [e,mapped[e]]})
       
+      for(var date=data.CreatedAt;(new Date(date)) < (new Date());date.setDate(date.getDate() + 1)){
+        if(!array.find( i => AggregateBy(date) === i[0])){
+          var yesterday = new Date((new Date(date)).getTime() - 24*60*60*1000);
+          const yestvalue = array.find( i => AggregateBy(yesterday) === i[0])
+          // console.log(yestvalue,prefixArray.findIndex( i => AggregateBy(yesterday) === i[0]))
+          if(!yestvalue){
+            array.splice(0,0,[AggregateBy(date),0])
+          }else{
+            array.splice(array.findIndex( i => AggregateBy(yesterday) === i[0])+1,0,[AggregateBy(date),0])
+          }
+        }
+      }
       console.log("Hi")
       return res.status(200).json(array)
 
