@@ -180,6 +180,7 @@ PostsRouter.get('/:id/followowner', async (req, res, next) => {
 
     const found = await Post.findById(PostId,{PostedBy: true})
 
+    console.log(found)
     if(found === null){
         return res.status(400).json({error: 'post does not exist'})
     }

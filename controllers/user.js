@@ -118,7 +118,7 @@ UserRouter.put('/', middleware.tokenExtractor, middleware.userExtractor, async (
         }
         const olduser = await User.findByIdAndUpdate(user._id, newuser,{runValidators: true})
         // console.log(await Post.find({ 'PostedBy.id': user._id,'PostedBy.Name': { $ne: 'Blocked User' } }))
-        await Post.updateMany({ 'PostedBy.id': user._id,'PostedBy.Name': { $ne: 'Blocked User' } },{PostedBy: {Name: `${newuser.firstName} ${newuser.lastName}`}})
+        await Post.updateMany({ 'PostedBy.id': user._id,'PostedBy.Name': { $ne: 'Blocked User' } },{PostedBy: {Name: `${newuser.firstName} ${newuser.lastName}`, id:user._id}})
         return res.status(200).json(await User.findById(user._id))
     } catch (e) {
         console.log(e)
