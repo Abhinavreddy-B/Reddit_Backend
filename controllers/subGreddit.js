@@ -5,10 +5,171 @@ const SubGreddit = require('../models/SubGreddit')
 const User = require('../models/user');
 const SubGredditRouter = express.Router()
 const config = require('../utils/config')
+const Fuse = require('fuse.js')
 
 // get all subgreddits
+SubGredditRouter.get('/tags',async (req,res,next) => {
+    console.log("Hey")
+    const items =  await SubGreddit.find({}, { Tags: true})
+    const tagArrays = items.map(e => e.Tags)
+    let tags = []
+    tagArrays.forEach(arr => {
+        tags = [...new Set([...tags, ...arr])]
+    })
+    return res.status(200).json(tags)
+})
+
 SubGredditRouter.get('/all', async (req, res, next) => {
-    return res.status(200).json(await SubGreddit.find({}, { Name: true, Description: true, Tags: true, Banned: true, PeopleCount: true, PostsCount: true, CreatedAt: true }))
+    console.log("query",req.query,req.query.sort)
+    const page = parseInt(req.query.page) || 1;
+    const perPage = 6;
+    const startIndex = (page - 1) * perPage;
+    const endIndex = startIndex + perPage;
+    const search = req.query.search || undefined;
+    const fuzzy = (req.query.fuzzy === 'true') || false;
+    // console.log("tags",req.query)
+    const Tags = req.query.Tags || [];
+    const sort = req.query.sort || 'NameAsc';
+    const user = req.user
+
+
+    const NameAscCmp = (a, b) => {
+        if (a.Name < b.Name) {
+            return -1
+        } else if (a.Name > b.Name) {
+            return 1
+        }
+        return 0
+    }
+    
+    const NameDescCmp = (a, b) => {
+        if (a.Name > b.Name) {
+            return -1
+        } else if (a.Name < b.Name) {
+            return 1
+        }
+        return 0
+    }
+    
+    const FollowerCmp = (a, b) => {
+        if (a.PeopleCount > b.PeopleCount) {
+            return -1
+        } else if (a.PeopleCount < b.PeopleCount) {
+            return 1
+        }
+        return 0
+    }
+    
+    const CreationCmp = (a, b) => {
+        if (new Date(a.CreatedAt) > new Date(b.CreatedAt)) {
+            return -1
+        } else if (new Date(a.CreatedAt) < new Date(b.CreatedAt)) {
+            return 1
+        }
+        return 0
+    }
+
+    items = await SubGreddit.find({}, { Name: true, Description: true, Tags: true, Banned: true, PeopleCount: true, PostsCount: true, CreatedAt: true })
+
+    const data =await User.findById(user._id,{SubGreddits: true,_id: false}).populate({
+        path: 'SubGreddits',
+        populate: {
+            path: 'id',
+            model: 'SubGreddit',
+            select: {id:true , _id: true}
+        },
+        select: {SubGreddits: true,_id: false}
+    })
+    UserSubGreddits = data.SubGreddits
+
+    const JoinedCmp = (a, b) => {
+        const f1 = UserSubGreddits.find(p => p.id.id === a.id)
+        const f2 = UserSubGreddits.find(p => p.id.id === b.id)
+        const e1 = f1 && f1.role !== 'left'
+        const e2 = f2 && f2.role !== 'left'
+
+        if (e1 && !e2) {
+            return -1
+        } else if (!e1 && e2) {
+            return 1
+        }
+        return 0
+    }
+    const FuzzyCmp = (a, b) => {
+        if (a.refIndex < b.refIndex) {
+            return -1
+        } else if (a.refIndex > b.refIndex) {
+            return 1
+        }
+        return 0
+    }
+
+    switch (sort) {
+        case 'NameAsc': {
+            items.sort(NameAscCmp)
+            break;
+        }
+        case 'NameDesc': {
+            items.sort(NameDescCmp)
+            break;
+        }
+        case 'Followers': {
+            items.sort(FollowerCmp)
+            break;
+        }
+        case 'Creation': {
+            items.sort(CreationCmp)
+            break;
+        }
+        default: {
+            console.log('hello')
+        }
+    }
+
+    const fuse = new Fuse(items, {
+        keys: ['Name']
+    })
+    // console.log(items[0].Name.toLowerCase())
+    // console.log(items.slice().filter(f => f.Name.toLowerCase().includes(search.toLowerCase())).map(f => {return {item: f,refIndex: 1}}))
+    var FilteredData
+    console.log("search")
+    if(search !== undefined && search !== '' && search !== null){
+        console.log(typeof(fuzzy))
+        if(fuzzy === true){
+            console.log("Entering Fuzzy")
+            FilteredData = fuse.search(search)
+        }else{
+            FilteredData = items.filter(f => f.Name.toLowerCase().includes(search.toLowerCase())).map(f => {return {item: f,refIndex: 1}})
+            console.log("filtered data",FilteredData)
+        }
+    }else{
+        FilteredData = items.map(f => { return { item: f, refIndex: 1 } })
+    }
+    // const FilteredData = (search !== undefined && search !== '' && search !== null) ? (fuzzy? fuse.search(search) : items.filter(f => f.Name.toLowerCase().includes(search.toLowerCase())).map(f => {return {item: f,refIndex: 1}})) : items.map(f => { return { item: f, refIndex: 1 } })
+    
+    // console.log(items[0].Name)
+    console.log(fuzzy)
+    const TagFiltered = FilteredData ? (Tags.length > 0 ? FilteredData.filter(fdat => {
+        for (let i = 0; i < Tags.length; i++) {
+            if (fdat.item.Tags.find(val => val === Tags[i])) {
+                return true;
+            }
+        }
+        return false;
+    }) : FilteredData) : []
+
+    console.log(FilteredData)
+    const FuzzyData = TagFiltered.slice().sort(FuzzyCmp).map(f => f.item)
+    const SortedData = UserSubGreddits ? FuzzyData.slice().sort(JoinedCmp) : TagFiltered.slice()
+
+    const ToSend = SortedData
+
+    console.log("sending",ToSend)
+    const paginatedItems = ToSend.slice(startIndex, endIndex);
+    return res.status(200).json({
+        items: paginatedItems,
+        totalPages: Math.ceil(ToSend.length / perPage)
+    })
 })
 
 // GET subgreddits owned by a user
