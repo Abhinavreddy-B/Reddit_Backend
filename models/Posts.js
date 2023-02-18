@@ -18,7 +18,27 @@ const PostSchema = new mongoose.Schema({
     },
     Upvotes: Number,
     Downvotes: Number,
-    Comments: [String],
+    UpvoteList: {
+        type: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        }],
+        default: []
+    },
+    DownvoteList: {
+        type: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        }],
+        default: []
+    },
+    Comments: {
+        type: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Comment'
+        }],
+        default: []
+    },
 })
 
 PostSchema.set('toJSON', {

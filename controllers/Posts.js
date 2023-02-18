@@ -58,40 +58,32 @@ PostsRouter.post('/:id', async (req, res, next) => {
     }
 })
 
-PostsRouter.post('/comment/:id', async (req, res, next) => {
-    const user = req.user
-    const Postid = req.params.id
-    const { comment } = req.body
-    try {
 
-        let post = await Post.findById(Postid)
-        const id = post.PostedIn.toString()
-
-        if (!user.SubGreddits.find(f => f.id.toString() === id && f.role !== 'left')) {
-            return res.status(401).json({ error: 'You cant access this' })
-        }
-
-        try {
-            post.Comments.push(comment)
-            await post.save()
-
-            res.status(201).json(comment)
-        } catch (e) {
-            console.log(e)
-            res.status(500).end()
-        }
-    } catch (e) {
-        console.log(e)
-        res.status(404).json({ error: 'Post does not exist' })
-    }
-})
-
+const AddUpvote= (post,id) => {
+    post.Upvotes += 1
+    post.UpvoteList = post.UpvoteList ? post.UpvoteList.concat(id) : [id]
+    return post
+}
+const RemoveUpvote= (post,id) => {
+    post.Upvotes -= 1
+    post.UpvoteList = post.UpvoteList.filter(f => f.toString() !== id.toString())
+    return post
+}
+const AddDownvote= (post,id) => {
+    post.Downvotes += 1
+    post.DownvoteList = post.DownvoteList ? post.DownvoteList.concat(id) : [id]
+    return post
+}
+const RemoveDownvote= (post,id) => {
+    post.Downvotes -= 1
+    post.DownvoteList = post.DownvoteList.filter(f => f.toString() !== id.toString())
+    return post
+}
 PostsRouter.get('/:id/upvote', async (req, res, next) => {
     const user = req.user
     const Postid = req.params.id
 
     try {
-
         let post = await Post.findById(Postid)
         const id = post.PostedIn.toString()
 
@@ -99,11 +91,34 @@ PostsRouter.get('/:id/upvote', async (req, res, next) => {
             return res.status(401).json({ error: 'You cant access this' })
         }
 
+        
         try {
-            post.Upvotes += 1
+            // post.Upvotes += 1
+            // post.UpvoteList.push(user._id)
+            if(post.DownvoteList && post.DownvoteList.find(u => u.toString() === user._id.toString())){
+                // post.Downvotes -= 1
+                // post.DownvoteList = post.DownvoteList.filter(f => f.toString() !== user._id.toString())
+                // post.Upvotes += 1
+                // post.UpvoteList.push(user._id)
+                post = RemoveDownvote(post,user._id)
+                post = AddUpvote(post,user._id)
+                await post.save()
+                
+                return res.status(201).end()
+            }
+            if(post.UpvoteList && post.UpvoteList.find(u => u.toString() === user._id.toString())){
+                // post.Upvotes -= 1
+                // post.UpvoteList = post.UpvoteList.filter(f => f.toString() !== user._id.toString())
+                post = RemoveUpvote(post,user._id)
+                await post.save()
+    
+                return res.status(201).end()
+            }
+            
+            post = AddUpvote(post,user._id)
             await post.save()
-
-            res.status(201).end()
+            
+            return res.status(201).end()
         } catch (e) {
             console.log(e)
             res.status(500).end()
@@ -128,10 +143,24 @@ PostsRouter.get('/:id/downvote', async (req, res, next) => {
         }
 
         try {
-            post.Downvotes += 1
+            if(post.UpvoteList && post.UpvoteList.find(u => u.toString() === user._id.toString())){
+                post = RemoveUpvote(post,user._id)
+                post = AddDownvote(post,user._id)
+                await post.save()
+    
+                return res.status(201).end()
+            }
+            if(post.DownvoteList && post.DownvoteList.find(u => u.toString() === user._id.toString())){
+                console.log("Hello")
+                post = RemoveDownvote(post,user._id)
+                await post.save()
+    
+                return res.status(201).end()
+            }
+            post = AddDownvote(post,user._id)
             await post.save()
 
-            res.status(201).end()
+            return res.status(201).end()
         } catch (e) {
             console.log(e)
             res.status(500).end()

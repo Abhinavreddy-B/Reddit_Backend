@@ -36,6 +36,9 @@ app.use('/api/report',middleware.tokenExtractor,middleware.userExtractor,Reports
 const StatsRouter = require('./controllers/Stats')
 app.use('/api/stats',middleware.tokenExtractor,middleware.userExtractor,StatsRouter)
 
+const CommentRouter = require('./controllers/Comments')
+app.use('/api/comment',middleware.tokenExtractor,middleware.userExtractor,CommentRouter)
+
 app.use('/api/*',middleware.errorHandler)
 
 module.exports = app

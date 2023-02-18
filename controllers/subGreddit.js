@@ -164,7 +164,7 @@ SubGredditRouter.get('/all', async (req, res, next) => {
 
     const ToSend = SortedData
 
-    console.log("sending",ToSend)
+    // console.log("sending", ToSend)
     const paginatedItems = ToSend.slice(startIndex, endIndex);
     return res.status(200).json({
         items: paginatedItems,
@@ -180,7 +180,8 @@ SubGredditRouter.get('/', async (req, res, next) => {
 
 
 const PostsRouter = express.Router()
-const ImageKit = require("imagekit")
+const ImageKit = require("imagekit");
+const Comment = require('../models/Comments');
 
 
 const imageKit = new ImageKit({
@@ -301,15 +302,58 @@ SubGredditRouter.get('/:id', async (req, res, next) => {
 
     const found = await SubGreddit.findById(id)
 
-    console.log("Hello")
+    // console.log("Hello")
     found.VisitStat.push({ date: new Date(), delta: 1 })
 
     await found.save()
+    var newData = await SubGreddit.findById(id, { ImageUrl: true, Name: true, Description: true, Tags: true, Banned: true, PeopleCount: true, PostsCount: true, Owner: true, CreatedAt: true, Posts: true, _id: true }).populate({
+        path: 'Posts',
+        model: Post,
+        populate: {
+            path: 'Comments',
+            model: Comment,
+            select: {Text: true}
+        }
+    })
+
+    // console.log({...newData.Posts[0]})'
+    var temp = JSON.parse(JSON.stringify(newData.Posts))
+    temp = temp.map(f => {
+        if(f.UpvoteList && f.UpvoteList.find(u => u.toString() === user._id.toString())){
+            return {...f,Upvoted: true}
+        }else{
+            return {...f,Upvoted: false}
+        }
+    })
+    temp = temp.map(f => {
+        if(f.DownvoteList && f.DownvoteList.find(u => u.toString() === user._id.toString())){
+            return {...f,Downvoted: true}
+        }else{
+            return {...f,Downvoted: false}
+        }
+    })
+    
+    temp = temp.map(f => {
+        return {
+            Text: f.Text,
+            PostedBy: f.PostedBy,
+            PostedIn: f.PostedIn,
+            Upvotes: f.Upvotes,
+            Downvotes: f.Downvotes,
+            Comments: f.Comments,
+            Upvoted: f.Upvoted,
+            Downvoted: f.Downvoted,
+            id: f.id
+        }
+    })
+    // console.log(temp)
+    // console.log(newData.Posts)
+    newData = newData.toObject()
+    newData.id = newData._id.toString()
+    newData.Posts = temp
+    // console.log(newData)
     res.status(200).json(
-        await SubGreddit.findById(id, {ImageUrl: true, Name: true, Description: true, Tags: true, Banned: true, PeopleCount: true, PostsCount: true, Owner: true, CreatedAt: true, Posts: true, _id: true }).populate({
-            path: 'Posts',
-            model: Post
-        })
+        newData
     )
 })
 
