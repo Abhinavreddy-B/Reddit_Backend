@@ -36,6 +36,6 @@ app.use('/api/report',middleware.tokenExtractor,middleware.userExtractor,Reports
 const StatsRouter = require('./controllers/Stats')
 app.use('/api/stats',middleware.tokenExtractor,middleware.userExtractor,StatsRouter)
 
-// app.use(middleware.errorHandler)
+app.use('/api/*',middleware.errorHandler)
 
 module.exports = app
