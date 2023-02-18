@@ -213,6 +213,11 @@ UserRouter.get('/savedposts',middleware.tokenExtractor,middleware.userExtractor,
         populate: [{
             path: 'Post',
             model: 'Post',
+            populate: {
+                path: 'Comments',
+                model: Comment,
+                select: {Text: true}
+            }
         },{
             path: 'SubGreddit',
             model: 'SubGreddit',
