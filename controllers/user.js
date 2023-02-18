@@ -4,6 +4,7 @@ const config = require('../utils/config')
 const Post = require('../models/Posts')
 const User = require('../models/user')
 const jwt = require('jsonwebtoken')
+const Comment = require('../models/Comments')
 const middleware = require('../utils/middleware')
 
 const UserRouter = express.Router()
