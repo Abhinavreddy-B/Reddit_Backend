@@ -170,9 +170,13 @@ ReportsRouter.get('/:id/block', async (req, res, next) => {
     foundSubGreddit.People = foundSubGreddit.People.map(f => f.ref.toString() === post.PostedBy.id.toString() ? { ...f, blocked: true } : f)
 
     // console.log("Here",foundSubGreddit)
+
+    
     await Post.updateMany({ PostedBy: { Name: post.PostedBy.Name, id: post.PostedBy.id }, PostedIn: SubGredditId }, { PostedBy: { Name: 'Blocked User', id: post.PostedBy.id } })
-    await User.findByIdAndUpdate(report.ReportedOn,{$pull: {SubGreddits: {id: foundSubGreddit._id}}})
+    await User.findByIdAndUpdate(report.ReportedOn._id,{ $pull: { SubGreddits: { id: foundSubGreddit._id, role: 'joined' } } })
     await foundSubGreddit.save()
+    // console.log(await User.findById(report.ReportedOn._id), foundSubGreddit._id )
+   
 
     SendMail(report.ReportedOn.Email,'You were Blocked','Report in Greddit')
     SendMail(report.ReportedBy.Email,'Considering your report, the corresponding user was blocked','Report in Greddit')
