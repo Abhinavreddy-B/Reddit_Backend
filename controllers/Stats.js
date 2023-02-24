@@ -17,7 +17,6 @@ StatsRouter.get('/:id/growth',async (req,res,next) => {
     const data = await SubGreddit.findById(id)
 
     const daltas = data.GrowthStat
-    console.log(daltas)
 
     const mapped = daltas.reduce((resMap, obj) => {
         const date = AggregateBy(obj.date)
@@ -38,7 +37,6 @@ StatsRouter.get('/:id/growth',async (req,res,next) => {
         if(!prefixArray.find( i => AggregateBy(date) === i[0])){
           var yesterday = new Date((new Date(date)).getTime() - 24*60*60*1000);
           const yestvalue = prefixArray.find( i => AggregateBy(yesterday) === i[0])
-          console.log(yestvalue,prefixArray.findIndex( i => AggregateBy(yesterday) === i[0]))
           if(!yestvalue){
             prefixArray.splice(0,0,[AggregateBy(date),0])
           }else{
@@ -46,7 +44,6 @@ StatsRouter.get('/:id/growth',async (req,res,next) => {
           }
         }
       }
-      console.log(prefixArray)
       return res.status(200).json(prefixArray)
 
 })
@@ -63,7 +60,6 @@ StatsRouter.get('/:id/postsvsdate',async (req,res,next) => {
     const data = await SubGreddit.findById(id)
 
     const daltas = data.PostsVsDateStat || []
-    console.log(daltas)
 
     const mapped = daltas.reduce((resMap, obj) => {
         const date = AggregateBy(obj.date)
@@ -91,7 +87,6 @@ StatsRouter.get('/:id/postsvsdate',async (req,res,next) => {
           }
         }
       }
-      console.log("Hi")
       return res.status(200).json(array)
 
 })
@@ -107,7 +102,6 @@ StatsRouter.get('/:id/visitorsvsdate',async (req,res,next) => {
     const data = await SubGreddit.findById(id)
 
     const daltas = data.VisitStat || []
-    console.log(daltas)
 
     const mapped = daltas.reduce((resMap, obj) => {
         const date = AggregateBy(obj.date)
@@ -134,7 +128,6 @@ StatsRouter.get('/:id/visitorsvsdate',async (req,res,next) => {
           }
         }
       }
-      console.log("Hi")
       return res.status(200).json(array)
 
 })
@@ -150,7 +143,6 @@ StatsRouter.get('/:id/reportedvsdeleted',async (req,res,next) => {
     const data = await SubGreddit.findById(id)
 
     const daltas = data.ReportsVsDel || []
-    console.log(daltas)
 
     const mapped = daltas.reduce((resMap, obj) => {
         const cnt = obj.reported

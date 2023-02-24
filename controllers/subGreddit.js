@@ -9,7 +9,6 @@ const Fuse = require('fuse.js')
 
 // get all subgreddits
 SubGredditRouter.get('/tags',async (req,res,next) => {
-    console.log("Hey")
     const items =  await SubGreddit.find({}, { Tags: true})
     const tagArrays = items.map(e => e.Tags)
     let tags = []
@@ -20,7 +19,6 @@ SubGredditRouter.get('/tags',async (req,res,next) => {
 })
 
 SubGredditRouter.get('/all', async (req, res, next) => {
-    console.log("query",req.query,req.query.sort)
     const page = parseInt(req.query.page) || 1;
     const perPage = 6;
     const startIndex = (page - 1) * perPage;
@@ -132,15 +130,11 @@ SubGredditRouter.get('/all', async (req, res, next) => {
     // console.log(items[0].Name.toLowerCase())
     // console.log(items.slice().filter(f => f.Name.toLowerCase().includes(search.toLowerCase())).map(f => {return {item: f,refIndex: 1}}))
     var FilteredData
-    console.log("search")
     if(search !== undefined && search !== '' && search !== null){
-        console.log(typeof(fuzzy))
         if(fuzzy === true){
-            console.log("Entering Fuzzy")
             FilteredData = fuse.search(search)
         }else{
             FilteredData = items.filter(f => f.Name.toLowerCase().includes(search.toLowerCase())).map(f => {return {item: f,refIndex: 1}})
-            console.log("filtered data",FilteredData)
         }
     }else{
         FilteredData = items.map(f => { return { item: f, refIndex: 1 } })
@@ -148,7 +142,6 @@ SubGredditRouter.get('/all', async (req, res, next) => {
     // const FilteredData = (search !== undefined && search !== '' && search !== null) ? (fuzzy? fuse.search(search) : items.filter(f => f.Name.toLowerCase().includes(search.toLowerCase())).map(f => {return {item: f,refIndex: 1}})) : items.map(f => { return { item: f, refIndex: 1 } })
     
     // console.log(items[0].Name)
-    console.log(fuzzy)
     const TagFiltered = FilteredData ? (Tags.length > 0 ? FilteredData.filter(fdat => {
         for (let i = 0; i < Tags.length; i++) {
             if (fdat.item.Tags.find(val => val === Tags[i])) {
@@ -158,7 +151,6 @@ SubGredditRouter.get('/all', async (req, res, next) => {
         return false;
     }) : FilteredData) : []
 
-    console.log(FilteredData)
     const FuzzyData = TagFiltered.slice().sort(FuzzyCmp).map(f => f.item)
     const SortedData = UserSubGreddits ? FuzzyData.slice().sort(JoinedCmp) : TagFiltered.slice()
 
@@ -196,7 +188,6 @@ SubGredditRouter.post('/', async (req, res, next) => {
     const Banned = JSON.parse(UnParsedBanned)
     const user = req.user
     const file = req.files ? req.files.image : null
-    console.log(Name,Description,Tags,Banned)
     // console.log(file)
     const up = file ? await imageKit.upload({
         file: file.data,

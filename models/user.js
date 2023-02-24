@@ -31,7 +31,6 @@ const UserSchema = new mongoose.Schema({
         validate: {
             validator: function(v) {
                 var re = /^[0-9]{10}$/;
-                console.log(v.toString())
                 return re.test(v.toString())
             },
             message: 'Provided phone number is invalid.'

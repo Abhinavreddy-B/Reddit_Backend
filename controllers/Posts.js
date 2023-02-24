@@ -151,7 +151,6 @@ PostsRouter.get('/:id/downvote', async (req, res, next) => {
                 return res.status(201).end()
             }
             if(post.DownvoteList && post.DownvoteList.find(u => u.toString() === user._id.toString())){
-                console.log("Hello")
                 post = RemoveDownvote(post,user._id)
                 await post.save()
     
@@ -209,13 +208,11 @@ PostsRouter.get('/:id/followowner', async (req, res, next) => {
 
     const found = await Post.findById(PostId,{PostedBy: true})
 
-    console.log(found)
     if(found === null){
         return res.status(400).json({error: 'post does not exist'})
     }
     const FollowingId = found.PostedBy.id
     
-    console.log(FollowingId,user._id)
     if(FollowingId.toString() === user._id.toString()){
         return res.status(400).json({error: 'You can not follow yourself'})
     }

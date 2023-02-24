@@ -3,7 +3,6 @@ const User = require('../models/user')
 
 const VerifyFollow = async (token,ChatWith) => {
     const decodedToken = jwt.verify(token, process.env.SECRET)
-    console.log(decodedToken)
     if (!decodedToken.id) {
         return {error: 'Missing authentication token'}
     }
@@ -19,7 +18,6 @@ const VerifyFollow = async (token,ChatWith) => {
 
 const getUserId = async (token) => {
     const decodedToken = jwt.verify(token, process.env.SECRET)
-    console.log(decodedToken)
     const user = await User.findById(decodedToken.id)
     return user._id.toString()
 }
